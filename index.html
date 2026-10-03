@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="theme-color" content="#0b0712" />
 <title>LeadsPay Connect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#08070b;--panel:#111016;--panel2:#17141f;--line:#2b2636;--text:#f5f3f8;--muted:#aaa4b5;--purple:#8b5cf6;--purple2:#6d28d9;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--blue:#3b82f6;--shadow:0 22px 70px rgba(0,0,0,.35);--r:18px}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
@@ -13,6 +16,348 @@ body{min-height:100vh;background:radial-gradient(900px 500px at 80% -10%,rgba(12
 @media(max-width:1050px){.project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.folder-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.split,.detail-grid{grid-template-columns:1fr}.viewer{min-height:340px}}
 @media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:-270px;width:250px;transition:.2s;box-shadow:20px 0 60px rgba(0,0,0,.5)}.sidebar.open{left:0}.mobile-menu{display:inline-flex}.topbar{padding:0 14px}.search{max-width:none}.top-actions .role-label{display:none}.content{padding:20px 14px}.head{align-items:flex-start;flex-direction:column}.project-grid{grid-template-columns:1fr}.folder-grid{grid-template-columns:1fr 1fr}.form-grid,.settings-grid,.role-grid{grid-template-columns:1fr}.modal-back{padding:8px}.modal{border-radius:18px;max-height:96vh}.detail-grid{display:block}.viewer{min-height:300px;margin-bottom:14px}}
 @media(max-width:450px){.stats{grid-template-columns:1fr 1fr}.stat{padding:14px;min-height:100px}.stat .num{font-size:24px}.folder-grid{grid-template-columns:1fr}.top-actions .btn:not(.primary){display:none}.content{padding:18px 12px}}
+
+/* ===== LeadsPay Connect · Professional UI System v3 ===== */
+:root{
+  --bg:#07070a;
+  --panel:#0d0d12;
+  --panel2:#121219;
+  --panel3:#171720;
+  --line:#24242e;
+  --line-strong:#343442;
+  --text:#f7f7fb;
+  --muted:#9696a6;
+  --muted2:#6f6f7d;
+  --purple:#7c3aed;
+  --purple2:#8b5cf6;
+  --purple3:#a78bfa;
+  --ok:#22c55e;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --blue:#3b82f6;
+  --shadow:0 24px 64px rgba(0,0,0,.34);
+  --shadow-soft:0 10px 30px rgba(0,0,0,.18);
+  --r:16px;
+  --sidebar:268px;
+}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{
+  font-family:"Inter",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:-.01em;
+  background:
+    radial-gradient(900px 560px at 86% -180px,rgba(124,58,237,.15),transparent 62%),
+    radial-gradient(740px 520px at -220px 20%,rgba(99,102,241,.08),transparent 64%),
+    var(--bg);
+}
+::selection{background:rgba(139,92,246,.35);color:#fff}
+*{scrollbar-width:thin;scrollbar-color:#2f2f3c transparent}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:#2f2f3c;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-track{background:transparent}
+.app{grid-template-columns:var(--sidebar) minmax(0,1fr)}
+.sidebar{
+  padding:18px 14px;
+  border-right:1px solid rgba(255,255,255,.065);
+  background:linear-gradient(180deg,rgba(11,11,16,.98),rgba(8,8,12,.98));
+  box-shadow:10px 0 40px rgba(0,0,0,.12);
+}
+.brand{padding:4px 8px 20px;gap:11px}
+.brand-mark{
+  width:38px;height:38px;border-radius:11px;
+  background:linear-gradient(145deg,#9f7aea 0%,#7c3aed 54%,#5b21b6 100%);
+  box-shadow:0 10px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.22);
+  font-size:13px;font-weight:800;letter-spacing:-.06em;
+  border:1px solid rgba(255,255,255,.10);
+}
+.brand b{font-size:14px;font-weight:700;letter-spacing:-.02em}
+.brand small{
+  margin-top:3px;font-size:9px;text-transform:uppercase;letter-spacing:.14em;
+  color:#777787;font-weight:700;
+}
+.nav{gap:4px}
+.nav button{
+  min-height:42px;padding:0 11px;border-radius:10px;
+  color:#9e9ead;font-size:12.5px;font-weight:600;letter-spacing:-.01em;
+  transition:background .16s ease,color .16s ease,transform .16s ease,border-color .16s ease;
+  position:relative;border:1px solid transparent;
+}
+.nav button:hover{background:#13131a;color:#eeeef4;border-color:#1f1f28;transform:translateX(1px)}
+.nav button.active{
+  background:linear-gradient(180deg,rgba(124,58,237,.16),rgba(124,58,237,.10));
+  color:#f3efff;border-color:rgba(139,92,246,.22);
+  box-shadow:none;
+}
+.nav button.active:before{
+  content:"";position:absolute;left:-15px;top:10px;width:3px;height:20px;border-radius:0 5px 5px 0;
+  background:linear-gradient(#a78bfa,#7c3aed);box-shadow:0 0 14px rgba(139,92,246,.55)
+}
+.nav .ico{width:20px;height:20px;display:grid;place-items:center;opacity:.9}
+.nav .ico svg{width:17px;height:17px;stroke-width:1.8}
+.sidebar-foot{left:14px;right:14px;bottom:14px}
+.profile-mini{
+  padding:10px 11px;border-radius:13px;background:#0d0d13;border-color:#202029;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.avatar{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(145deg,rgba(139,92,246,.3),rgba(91,33,182,.18));
+  border:1px solid rgba(139,92,246,.28);color:#ddd2ff;font-size:12px;
+}
+.profile-mini b{font-size:11.5px;font-weight:700}
+.profile-mini small{font-size:9.5px;color:#777786;margin-top:2px}
+.topbar{
+  height:70px;padding:0 28px;gap:14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(7,7,10,.72);backdrop-filter:blur(18px) saturate(1.2);
+}
+.search{max-width:520px}
+.search:before{display:none}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#71717f;display:grid;place-items:center;pointer-events:none}
+.search-icon svg{width:16px;height:16px;stroke-width:1.9}
+.search input{
+  height:40px;padding:0 14px 0 37px;border-radius:11px;background:#0e0e14;
+  border-color:#202029;font-size:12px;color:#efeff4;box-shadow:inset 0 1px 0 rgba(255,255,255,.02)
+}
+.search input::placeholder{color:#656573}
+.search input:focus{border-color:#4b3b6a;box-shadow:0 0 0 3px rgba(124,58,237,.10)}
+.top-actions{gap:8px}
+.role-label{padding:0 4px}
+.sync-chip{
+  height:28px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border:1px solid #24242d;
+  background:#0f0f14;border-radius:999px;color:#8d8d9b;font-size:9.5px;font-weight:650;letter-spacing:.01em
+}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#6b7280;box-shadow:0 0 0 3px rgba(107,114,128,.09)}
+.sync-chip.connected .sync-dot{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.10)}
+.sync-chip.error .sync-dot{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.10)}
+.btn{
+  min-height:40px;padding:0 14px;border-radius:10px;border-color:#26262f;background:#121218;
+  font-size:11.5px;font-weight:700;letter-spacing:-.01em;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  transition:transform .15s ease,background .15s ease,border-color .15s ease,box-shadow .15s ease;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025)
+}
+.btn svg{width:15px;height:15px;stroke-width:2}
+.btn:hover{background:#17171f;border-color:#393946;transform:translateY(-1px)}
+.btn.primary{
+  background:linear-gradient(180deg,#8b5cf6,#7c3aed);border-color:#9168f4;
+  box-shadow:0 8px 20px rgba(124,58,237,.20),inset 0 1px 0 rgba(255,255,255,.18)
+}
+.btn.primary:hover{background:linear-gradient(180deg,#966cf8,#8050ed);box-shadow:0 10px 24px rgba(124,58,237,.28)}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;border-radius:9px;font-size:10px}
+.icon-btn{
+  width:38px;height:38px;border:1px solid #25252f;background:#111117;color:#d6d6df;border-radius:10px;
+  display:inline-grid;place-items:center
+}
+.icon-btn svg{width:17px;height:17px}
+.content{padding:32px 30px 48px;max-width:1500px}
+.head{margin-bottom:22px;align-items:center}
+.head h1{font-size:27px;font-weight:750;letter-spacing:-.045em}
+.head p{font-size:11.5px;color:#858594;line-height:1.55}
+.notice{
+  border-color:#2d2440;background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(124,58,237,.045));
+  color:#b8b1c8;padding:12px 14px;border-radius:12px;font-size:10.5px;line-height:1.55
+}
+.notice b{font-weight:700;color:#ece7f7}
+.dashboard-hero{
+  border:1px solid rgba(139,92,246,.17);border-radius:20px;padding:26px 28px;margin-bottom:16px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(520px 220px at 88% -20%,rgba(139,92,246,.22),transparent 62%),
+    linear-gradient(145deg,#101018,#0d0d13 58%,#0d0c13);
+  box-shadow:var(--shadow-soft)
+}
+.dashboard-hero:after{
+  content:"";position:absolute;inset:auto -80px -130px auto;width:270px;height:270px;border-radius:50%;
+  border:1px solid rgba(139,92,246,.12);box-shadow:0 0 0 34px rgba(139,92,246,.035),0 0 0 74px rgba(139,92,246,.025)
+}
+.hero-row{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.hero-copy{max-width:700px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;margin-bottom:10px;color:#a89db9;font-size:9.5px;
+  font-weight:750;letter-spacing:.13em;text-transform:uppercase
+}
+.eyebrow:before{content:"";width:16px;height:1px;background:#8b5cf6}
+.dashboard-hero h1{margin:0;font-size:30px;line-height:1.08;letter-spacing:-.05em;font-weight:760}
+.dashboard-hero p{margin:9px 0 0;color:#9292a1;font-size:11.5px;line-height:1.6}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:2}
+.stats{gap:12px;margin-bottom:16px}
+.stat{
+  min-height:126px;padding:17px;border-radius:15px;background:linear-gradient(180deg,#101016,#0d0d12);
+  border-color:#202029;box-shadow:none;position:relative;overflow:hidden
+}
+.stat:after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:-52px;bottom:-60px;background:rgba(139,92,246,.05)}
+.stat-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.stat-icon{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(139,92,246,.10);border:1px solid rgba(139,92,246,.14);color:#b7a4f8
+}
+.stat-icon svg{width:14px;height:14px}
+.stat-kicker{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:#6f6f7e}
+.stat .num{font-size:29px;line-height:1;font-weight:760;letter-spacing:-.055em;margin:18px 0 6px;position:relative;z-index:1}
+.stat .hint{font-size:9.5px;color:#747482;position:relative;z-index:1}
+.split{gap:14px}
+.card{
+  border-color:#202029;background:linear-gradient(180deg,rgba(15,15,21,.98),rgba(12,12,17,.98));
+  border-radius:16px;box-shadow:none;overflow:hidden
+}
+.card-h{padding:15px 16px;border-bottom-color:#1e1e27}
+.card-h h3{font-size:11.5px;font-weight:750;letter-spacing:-.01em}
+.card-b{padding:15px}
+.quick-grid{gap:9px}
+.quick{
+  min-height:102px;padding:14px;border-radius:13px;border-color:#22222b;background:#0f0f15;
+  transition:transform .15s ease,border-color .15s ease,background .15s ease
+}
+.quick:hover{transform:translateY(-1px);border-color:#3a2e50;background:#121119}
+.quick span{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#17121f;color:#bca9fb;margin-bottom:11px}
+.quick span svg{width:14px;height:14px}
+.quick b{font-size:10.5px;font-weight:750}
+.quick small{font-size:9px;color:#70707e;margin-top:4px;line-height:1.45}
+.row{border-color:#202029;background:#0d0d12;border-radius:12px;padding:10px;transition:border-color .15s ease,background .15s ease}
+.row:hover{border-color:#31313c;background:#101016}
+.row-main b{font-size:10.7px;font-weight:700}
+.row-main small{font-size:9px;color:#737381}
+.thumb{border-radius:9px;background:#15151d}
+.badge{
+  font-size:8.5px;font-weight:700;padding:4px 7px;border-radius:999px;letter-spacing:.01em;
+  display:inline-flex;align-items:center;gap:5px
+}
+.badge:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+.folder-grid{gap:10px}
+.folder{
+  min-height:112px;padding:15px;border-radius:14px;border-color:#22222b;background:#0e0e14;
+  transition:transform .15s ease,border-color .15s ease,background .15s ease
+}
+.folder:hover{transform:translateY(-1px);border-color:#3b3150;background:#111018}
+.folder .ficon{font-size:20px;color:#aa98e7}
+.folder b{font-size:10.5px;margin-top:10px}
+.folder small{font-size:9px}
+.filters{gap:8px;margin-bottom:14px}
+.filters select,.filters input{
+  min-height:36px;border-radius:9px;background:#0e0e14;border-color:#22222b;font-size:10px;padding:0 10px
+}
+.project-grid{gap:12px}
+.project{border-radius:15px}
+.project:hover{transform:translateY(-3px);border-color:#382c4d;box-shadow:0 18px 34px rgba(0,0,0,.17)}
+.project-cover{aspect-ratio:1.7;background:#111118}
+.project-body{padding:13px}
+.project h3{font-size:11px;font-weight:750}
+.project p{font-size:9px;margin:7px 0 9px}
+.tag{font-size:8px;padding:3px 6px;background:#111118;border-color:#24242d}
+.project-foot{font-size:8.5px;margin-top:10px}
+.calendar-wrap{border-radius:14px}
+.cal-grid{border-color:#22222b;background:#22222b}
+.dow{background:#111118;color:#6f6f7e;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.day{background:#0d0d12;min-height:118px}
+.cal-event{background:#171222;border-color:#33264a;color:#cfc4ed}
+.integration{border-color:#22222b;background:#0e0e14;border-radius:13px}
+.integration .logo{background:#161220;color:#bba8f7}
+.settings-grid{gap:12px}
+.field label{font-size:9.5px;color:#8b8b99;font-weight:650}
+.field input,.field textarea,.field select{
+  border-radius:10px;background:#0c0c11;border-color:#25252f;font-size:11px;padding:10px 11px
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#604a80;box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+.modal-back{background:rgba(3,3,6,.78);backdrop-filter:blur(10px)}
+.modal{
+  border-radius:18px;border-color:#292934;background:#0d0d12;box-shadow:0 32px 90px rgba(0,0,0,.58)
+}
+.modal-h{padding:15px 17px;background:rgba(13,13,18,.90);border-bottom-color:#22222b}
+.modal-h h2{font-size:13px;font-weight:750}
+.x{background:#15151d;border:1px solid #25252f}
+.upload{border-color:#3e3154;background:#0e0d13;border-radius:13px}
+.slide{border-color:#25252f;border-radius:10px;background:#111118}
+.viewer{border-color:#24242d;background:#08080c;border-radius:14px}
+.meta-box{border-color:#22222b;background:#0e0e13;border-radius:12px}
+.meta-box h4{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#747482}
+.meta-box p{font-size:10.5px}
+.comment{border-color:#212129;background:#0b0b10}
+.auth-shell{
+  width:min(1000px,100%);display:grid;grid-template-columns:1.12fr .88fr;overflow:hidden;
+  border:1px solid #272731;border-radius:24px;background:#0d0d12;box-shadow:0 36px 110px rgba(0,0,0,.52)
+}
+.login{padding:28px;background:
+  radial-gradient(620px 440px at 22% 18%,rgba(124,58,237,.18),transparent 62%),
+  radial-gradient(520px 380px at 82% 82%,rgba(79,70,229,.08),transparent 60%),
+  #07070a
+}
+.auth-story{
+  min-height:610px;padding:38px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;
+  background:
+    linear-gradient(145deg,rgba(124,58,237,.16),rgba(124,58,237,.04) 42%,rgba(255,255,255,.01)),
+    #0b0b10;border-right:1px solid #25252f
+}
+.auth-story:before{
+  content:"";position:absolute;right:-120px;top:-100px;width:360px;height:360px;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,.20),transparent 66%)
+}
+.auth-brand{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+.auth-brand strong{font-size:12px;letter-spacing:-.02em}
+.auth-story-copy{position:relative;z-index:1;max-width:480px}
+.auth-story .eyebrow{margin-bottom:14px}
+.auth-story h1{font-size:38px;line-height:1.02;letter-spacing:-.058em;margin:0;font-weight:780;max-width:500px}
+.auth-story p{font-size:12px;line-height:1.7;color:#9797a6;margin:15px 0 0;max-width:440px}
+.auth-feature-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1}
+.auth-feature{
+  border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);border-radius:13px;padding:13px
+}
+.auth-feature span{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(139,92,246,.12);color:#bcaafa;margin-bottom:10px}
+.auth-feature span svg{width:13px;height:13px}
+.auth-feature b{display:block;font-size:9.5px;margin-bottom:3px}
+.auth-feature small{display:block;color:#727281;font-size:8.7px;line-height:1.45}
+.login-card{
+  width:auto;border:0;border-radius:0;background:transparent;box-shadow:none;padding:44px 38px;
+  display:flex;flex-direction:column;justify-content:center
+}
+.auth-form-head{margin-bottom:24px}
+.auth-form-head h2{font-size:22px;letter-spacing:-.04em;margin:0;font-weight:760}
+.auth-form-head p{font-size:10.5px;color:#7e7e8d;margin:7px 0 0;line-height:1.5}
+.login-card .field{margin-bottom:14px}
+.login-card .field label{font-size:9.5px;margin-bottom:2px}
+.login-card .field input{height:46px;font-size:11.5px;background:#0a0a0f}
+.login-card .btn.primary{height:46px;margin-top:2px}
+.login-note{font-size:8.8px;line-height:1.55;color:#666674;margin-top:15px}
+.remember-row{display:flex;align-items:center;gap:8px;color:#9292a0;font-size:9.5px;margin:-1px 0 14px;cursor:pointer}
+.remember-row input{width:15px;height:15px;accent-color:#7c3aed}
+.mobile-menu{display:none}
+:focus-visible{outline:2px solid rgba(139,92,246,.75);outline-offset:2px}
+@media(max-width:1050px){
+  .content{padding:26px 22px 42px}
+  .dashboard-hero h1{font-size:27px}
+  .auth-shell{grid-template-columns:1fr}
+  .auth-story{min-height:auto;padding:28px;border-right:0;border-bottom:1px solid #25252f}
+  .auth-story-copy{margin:30px 0}
+  .auth-story h1{font-size:31px}
+}
+@media(max-width:760px){
+  .sidebar{width:264px}
+  .topbar{padding:0 14px;height:64px}
+  .mobile-menu{display:inline-grid}
+  .sync-chip,.role-label{display:none!important}
+  .top-actions .btn.ghost span{display:none}
+  .top-actions .btn.ghost{width:38px;padding:0}
+  .top-actions .btn.primary span{display:none}
+  .top-actions .btn.primary{width:40px;padding:0}
+  .content{padding:20px 14px 34px}
+  .dashboard-hero{padding:21px 18px}
+  .hero-row{align-items:flex-start;flex-direction:column}
+  .dashboard-hero h1{font-size:25px}
+  .auth-story{display:none}
+  .login{padding:14px}
+  .auth-shell{display:block;border-radius:18px;max-width:480px}
+  .login-card{padding:32px 22px}
+}
+@media(max-width:450px){
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{min-height:116px;padding:14px}
+  .stat .num{font-size:25px}
+  .search input{font-size:11px}
+  .content{padding:18px 11px 30px}
+  .dashboard-hero{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
 </style>
 </head>
 <body><div id="root"></div><div id="overlay"></div><div id="toast"></div>
@@ -45,7 +390,30 @@ let unsubProjects=null,unsubActivity=null,unsubSettings=null;
 const K={projects:'lpc_projects_v1',activity:'lpc_activity_v1',settings:'lpc_settings_v1',session:'lpc_session_v1'};
 const fmt={instagram:['Carrossel','Post','Story','Capa de Reels','Outro'],site:['Banner','Landing Page','Imagem do Dashboard','Campanha','Logo / Identidade','Outro']};
 const statusLabel={draft:'Em produção',review:'Aguardando aprovação',changes:'Alteração solicitada',approved:'Aprovado',scheduled:'Agendado',published:'Publicado',failed:'Falha na publicação'};
-const nav=[['dashboard','⌂','Dashboard'],['instagram','◎','Instagram'],['site','◫','Site'],['calendar','▦','Calendário'],['approvals','✓','Aprovações'],['library','▣','Biblioteca'],['history','↺','Histórico'],['integrations','⛓','Integrações'],['settings','⚙','Configurações']];
+const icons={
+dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>',
+instagram:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+site:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/></svg>',
+calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+approvals:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg>',
+library:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/></svg>',
+history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>',
+integrations:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"/></svg>',
+settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>',
+search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><path d="m14 8 4 4-4 4M18 12H9"/></svg>',
+plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>',
+carousel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M2 8v8M22 8v8"/></svg>',
+story:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>',
+image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/></svg>',
+check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4L19 6"/></svg>',
+clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="m13 7 4 4"/></svg>',
+send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>'
+};
+function icon(name){return icons[name]||''}
+const nav=[['dashboard','dashboard','Dashboard'],['instagram','instagram','Instagram'],['site','site','Site'],['calendar','calendar','Calendário'],['approvals','approvals','Aprovações'],['library','library','Biblioteca'],['history','history','Histórico'],['integrations','integrations','Integrações'],['settings','settings','Configurações']];
 const defaultSettings={adminName:'Rick',designerName:'Designer',company:'LeadsPay',calendarStart:1};
 let state={view:'dashboard',search:'',role:null,user:null,profile:null,cloudStatus:'connecting',cloudError:'',projects:load(K.projects,[]),activity:load(K.activity,[]),settings:{...defaultSettings,...load(K.settings,{})},calDate:new Date(),detailId:null,detailSlide:0,draftFiles:[],draftDrag:null};
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}
@@ -68,6 +436,7 @@ function id(p='id'){return p+'_'+Date.now().toString(36)+'_'+Math.random().toStr
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function roleName(){return state.profile?.name||(state.role==='admin'?state.settings.adminName:state.settings.designerName)}
 function roleLabel(){return state.role==='admin'?'Administrador':'Designer'}
+function syncLabel(){return state.cloudStatus==='connected'?'Sincronizado':state.cloudStatus==='error'?'Atenção':'Sincronizando'}
 function nowLabel(d=new Date()){return d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
 function addActivity(action,projectId=null,detail=''){const item={id:id('act'),action,projectId,detail,by:roleName(),at:new Date().toISOString()};state.activity.unshift(item);save();if(state.user)setDoc(doc(cloudDb,'activity',item.id),plain(item)).catch(e=>cloudFail(e,'Salvar histórico'))}
 function toast(msg,type='ok'){const el=document.getElementById('toast');el.innerHTML='<div class="toast '+type+'">'+esc(msg)+'</div>';setTimeout(()=>el.innerHTML='',3200)}
@@ -78,14 +447,14 @@ async function delAsset(assetId){const db=await openDB();return new Promise((res
 async function clearAssets(){const db=await openDB();return new Promise((res)=>{const tx=db.transaction('assets','readwrite');tx.objectStore('assets').clear();tx.oncomplete=()=>res()})}
 function statusBadge(s){return '<span class="badge '+s+'">'+esc(statusLabel[s]||s)+'</span>'}
 function projectDate(p){return p.scheduledAt?new Date(p.scheduledAt):new Date(p.updatedAt||p.createdAt)}
-function render(){if(state.user&&!state.role){renderProfileSetup();return}if(!state.user){renderLogin();return}document.getElementById('root').innerHTML=`<div class="app"><aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark">LC</div><div><b>LeadsPay Connect</b><small>${esc(state.settings.company)}</small></div></div><nav class="nav">${nav.map(n=>`<button data-nav="${n[0]}" class="${state.view===n[0]?'active':''}"><span class="ico">${n[1]}</span>${n[2]}</button>`).join('')}</nav><div class="sidebar-foot"><div class="profile-mini"><div class="avatar">${esc(roleName().slice(0,1).toUpperCase())}</div><div><b>${esc(roleName())}</b><small>${roleLabel()}</small></div></div></div></aside><main class="main"><header class="topbar"><button class="btn ghost mobile-menu" data-action="menu">☰</button><div class="search"><input id="globalSearch" placeholder="Buscar conteúdos, campanhas, tags..." value="${esc(state.search)}"></div><div class="top-actions"><span class="role-label" style="color:var(--muted);font-size:11px">${esc(roleLabel())}</span><button class="btn" data-action="switchRole">Sair</button><button class="btn primary" data-action="new">＋ Novo conteúdo</button></div></header><section class="content" id="page"></section></main></div>`;renderPage();bindTop();}
-function renderLogin(){document.getElementById('root').innerHTML=`<div class="login"><div class="login-card" style="max-width:520px"><div class="login-brand"><div class="brand-mark">LC</div><h1>LeadsPay Connect</h1><p>Acesso interno da equipe da ${esc(state.settings.company)}</p></div><div class="field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="email" placeholder="seu e-mail de acesso"></div><div class="field"><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha"></div><label style="display:flex;align-items:center;gap:9px;color:#cfc7d7;font-size:11px;margin:2px 0 14px;cursor:pointer"><input id="rememberLogin" type="checkbox" checked style="width:16px;height:16px;accent-color:#7c3aed"> Manter conectado neste dispositivo</label><button class="btn primary" id="loginBtn" style="width:100%">Entrar</button><div class="login-note">Apenas as duas contas autorizadas da equipe conseguem acessar. A opção “Manter conectado” preserva a sessão neste dispositivo sem salvar a senha no código.</div></div></div>`;const go=async()=>{const email=document.getElementById('loginEmail').value.trim().toLowerCase(),password=document.getElementById('loginPassword').value,remember=document.getElementById('rememberLogin').checked;if(!email||!password){toast('Informe e-mail e senha.','err');return}if(!AUTHORIZED_USERS[email]){toast('Este e-mail não está autorizado no LeadsPay Connect.','err');return}const b=document.getElementById('loginBtn');b.disabled=true;b.textContent='Entrando...';try{await setPersistence(auth,remember?browserLocalPersistence:browserSessionPersistence);await signInWithEmailAndPassword(auth,email,password)}catch(e){console.error(e);const code=e?.code||'';const msg=code.includes('configuration-not-found')?'O Firebase Authentication ainda não foi ativado/configurado neste projeto. No Firebase Console, abra Authentication, clique em Começar e ative E-mail/Senha em Método de login.':code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')?'E-mail ou senha incorretos, ou a conta ainda não foi criada no Firebase Authentication.':code.includes('operation-not-allowed')?'Ative o provedor E-mail/Senha no Firebase Authentication.':code.includes('too-many-requests')?'Muitas tentativas. Aguarde um pouco e tente novamente.':'Não foi possível entrar: '+code;toast(msg,'err');b.disabled=false;b.textContent='Entrar'}};document.getElementById('loginBtn').onclick=go;document.getElementById('loginPassword').onkeydown=e=>{if(e.key==='Enter')go()}}
-function renderProfileSetup(){const allowed=AUTHORIZED_USERS[(state.user?.email||'').toLowerCase()];document.getElementById('root').innerHTML=`<div class="login"><div class="login-card" style="max-width:560px"><div class="login-brand"><div class="brand-mark">LC</div><h1>Preparando seu acesso</h1><p>${allowed?'Configurando automaticamente seu perfil da equipe.':'Este e-mail não está autorizado.'}</p></div><button class="btn ghost" id="profileLogout" style="width:100%">Sair</button></div></div>`;document.getElementById('profileLogout').onclick=()=>signOut(auth)}
+function render(){if(state.user&&!state.role){renderProfileSetup();return}if(!state.user){renderLogin();return}document.getElementById('root').innerHTML=`<div class="app"><aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark">LP</div><div><b>LeadsPay Connect</b><small>Content workspace</small></div></div><nav class="nav">${nav.map(n=>`<button data-nav="${n[0]}" class="${state.view===n[0]?'active':''}"><span class="ico">${icon(n[1])}</span>${n[2]}</button>`).join('')}</nav><div class="sidebar-foot"><div class="profile-mini"><div class="avatar">${esc(roleName().slice(0,1).toUpperCase())}</div><div><b>${esc(roleName())}</b><small>${roleLabel()} · ${state.cloudStatus==='connected'?'online':'workspace'}</small></div></div></div></aside><main class="main"><header class="topbar"><button class="icon-btn mobile-menu" data-action="menu" aria-label="Abrir menu">${icon('menu')}</button><div class="search"><span class="search-icon">${icon('search')}</span><input id="globalSearch" placeholder="Buscar conteúdos, campanhas e tags..." value="${esc(state.search)}"></div><div class="top-actions"><span class="sync-chip ${state.cloudStatus}"><span class="sync-dot"></span>${syncLabel()}</span><span class="role-label" style="color:var(--muted);font-size:10px">${esc(roleLabel())}</span><button class="btn ghost" data-action="switchRole">${icon('logout')}<span>Sair</span></button><button class="btn primary" data-action="new">${icon('plus')}<span>Novo conteúdo</span></button></div></header><section class="content" id="page"></section></main></div>`;renderPage();bindTop();}
+function renderLogin(){document.getElementById('root').innerHTML=`<div class="login"><div class="auth-shell"><section class="auth-story"><div class="auth-brand"><div class="brand-mark">LP</div><strong>LeadsPay Connect</strong></div><div class="auth-story-copy"><span class="eyebrow">Workspace privado</span><h1>Do design à publicação, tudo no mesmo fluxo.</h1><p>Organize carrosséis, centralize feedbacks, aprove alterações e mantenha o calendário da LeadsPay sempre em ordem.</p></div><div class="auth-feature-list"><div class="auth-feature"><span>${icon('carousel')}</span><b>Conteúdo organizado</b><small>Carrosséis e materiais separados por projeto.</small></div><div class="auth-feature"><span>${icon('check')}</span><b>Aprovação rápida</b><small>Feedback e status sem depender do WhatsApp.</small></div><div class="auth-feature"><span>${icon('calendar')}</span><b>Calendário visual</b><small>Veja tudo que está pronto e agendado.</small></div><div class="auth-feature"><span>${icon('send')}</span><b>Pronto para publicar</b><small>Fluxo preparado para automação oficial.</small></div></div></section><section class="login-card"><div class="auth-form-head"><span class="eyebrow">Acesso da equipe</span><h2>Bem-vindo de volta</h2><p>Entre com uma das contas autorizadas para acessar o workspace.</p></div><div class="field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="email" placeholder="seu e-mail de acesso"></div><div class="field"><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha"></div><label class="remember-row"><input id="rememberLogin" type="checkbox" checked> Manter conectado neste dispositivo</label><button class="btn primary" id="loginBtn" style="width:100%">Entrar no LeadsPay Connect</button><div class="login-note">Acesso restrito à equipe autorizada. Sua senha é validada diretamente pelo Firebase Authentication e não fica salva no código do site.</div></section></div></div>`;const go=async()=>{const email=document.getElementById('loginEmail').value.trim().toLowerCase(),password=document.getElementById('loginPassword').value,remember=document.getElementById('rememberLogin').checked;if(!email||!password){toast('Informe e-mail e senha.','err');return}if(!AUTHORIZED_USERS[email]){toast('Este e-mail não está autorizado no LeadsPay Connect.','err');return}const b=document.getElementById('loginBtn');b.disabled=true;b.textContent='Entrando...';try{await setPersistence(auth,remember?browserLocalPersistence:browserSessionPersistence);await signInWithEmailAndPassword(auth,email,password)}catch(e){console.error(e);const code=e?.code||'';const msg=code.includes('configuration-not-found')?'O Firebase Authentication ainda não foi ativado/configurado neste projeto. No Firebase Console, abra Authentication, clique em Começar e ative E-mail/Senha em Método de login.':code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')?'E-mail ou senha incorretos, ou a conta ainda não foi criada no Firebase Authentication.':code.includes('operation-not-allowed')?'Ative o provedor E-mail/Senha no Firebase Authentication.':code.includes('too-many-requests')?'Muitas tentativas. Aguarde um pouco e tente novamente.':'Não foi possível entrar: '+code;toast(msg,'err');b.disabled=false;b.textContent='Entrar'}};document.getElementById('loginBtn').onclick=go;document.getElementById('loginPassword').onkeydown=e=>{if(e.key==='Enter')go()}}
+function renderProfileSetup(){const allowed=AUTHORIZED_USERS[(state.user?.email||'').toLowerCase()];document.getElementById('root').innerHTML=`<div class="login"><div class="login-card" style="max-width:560px"><div class="login-brand"><div class="brand-mark">LP</div><h1>Preparando seu acesso</h1><p>${allowed?'Configurando automaticamente seu perfil da equipe.':'Este e-mail não está autorizado.'}</p></div><button class="btn ghost" id="profileLogout" style="width:100%">Sair</button></div></div>`;document.getElementById('profileLogout').onclick=()=>signOut(auth)}
 function bindTop(){document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{state.view=b.dataset.nav;document.getElementById('sidebar').classList.remove('open');render()});document.querySelector('[data-action="new"]').onclick=()=>openCreate();document.querySelector('[data-action="switchRole"]').onclick=async()=>{await signOut(auth)};document.querySelector('[data-action="menu"]').onclick=()=>document.getElementById('sidebar').classList.toggle('open');const s=document.getElementById('globalSearch');let t;s.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{state.search=s.value.trim();if(state.view==='dashboard')state.view='library';render()},220)}}
 function pageHead(title,sub,action=''){return `<div class="head"><div><h1>${title}</h1><p>${sub}</p></div>${action}</div>`}
 function renderPage(){const p=document.getElementById('page');if(!p)return;const f={dashboard:dashboardPage,instagram:()=>channelPage('instagram'),site:()=>channelPage('site'),calendar:calendarPage,approvals:approvalsPage,library:libraryPage,history:historyPage,integrations:integrationsPage,settings:settingsPage};p.innerHTML=(f[state.view]||dashboardPage)();bindPage();hydrateImages();}
 function localNotice(){if(state.cloudStatus==='connected')return `<div class="notice"><span>☁</span><div><b>Firebase conectado.</b> Projetos, comentários, status e calendário são sincronizados entre os usuários. Arquivos enviados ao Firebase Storage ficam disponíveis nos dois aparelhos. A publicação no Instagram continua desativada até conectarmos a API oficial da Meta.</div></div>`;if(state.cloudStatus==='error')return `<div class="notice"><span>!</span><div><b>Firebase configurado, mas há uma pendência.</b> ${esc(state.cloudError||'Verifique Authentication, Firestore, Storage e as regras de segurança no Firebase Console.')}</div></div>`;return `<div class="notice"><span>…</span><div><b>Conectando ao Firebase.</b> Aguarde a sincronização da sua área de trabalho.</div></div>`}
-function dashboardPage(){const counts={review:0,scheduled:0,published:0,changes:0};state.projects.forEach(p=>{if(counts[p.status]!==undefined)counts[p.status]++});const upcoming=state.projects.filter(p=>p.scheduledAt&&new Date(p.scheduledAt)>=new Date()&&p.status!=='published').sort((a,b)=>new Date(a.scheduledAt)-new Date(b.scheduledAt)).slice(0,6);return pageHead('Dashboard',`Olá, ${esc(roleName())}. Aqui está o fluxo de conteúdo da ${esc(state.settings.company)}.`)+localNotice()+`<div class="grid stats"><div class="stat"><div class="label">Aguardando aprovação</div><div class="num">${counts.review}</div><div class="hint">conteúdos esperando revisão</div></div><div class="stat"><div class="label">Agendados</div><div class="num">${counts.scheduled}</div><div class="hint">prontos para o calendário</div></div><div class="stat"><div class="label">Alterações pedidas</div><div class="num">${counts.changes}</div><div class="hint">itens para corrigir</div></div><div class="stat"><div class="label">Publicados</div><div class="num">${counts.published}</div><div class="hint">histórico concluído</div></div></div><div class="grid split"><div class="card"><div class="card-h"><h3>Próximas publicações</h3><button class="btn sm" data-navjump="calendar">Ver calendário</button></div><div class="card-b">${upcoming.length?`<div class="list">${upcoming.map(rowHTML).join('')}</div>`:emptyHTML('▦','Nenhuma publicação agendada','Quando você agendar um conteúdo, ele aparece aqui.')}</div></div><div class="card"><div class="card-h"><h3>Ações rápidas</h3></div><div class="card-b"><div class="quick-grid"><button class="quick" data-new-platform="instagram" data-new-format="Carrossel"><span>▣</span><b>Novo carrossel</b><small>Enviar vários slides</small></button><button class="quick" data-new-platform="instagram" data-new-format="Story"><span>◩</span><b>Novo story</b><small>Conteúdo vertical</small></button><button class="quick" data-new-platform="site" data-new-format="Banner"><span>▤</span><b>Design do site</b><small>Banners e telas</small></button><button class="quick" data-navjump="approvals"><span>✓</span><b>Aprovações</b><small>Revisar pendências</small></button></div></div></div></div>`}
+function dashboardPage(){const counts={review:0,scheduled:0,published:0,changes:0};state.projects.forEach(p=>{if(counts[p.status]!==undefined)counts[p.status]++});const upcoming=state.projects.filter(p=>p.scheduledAt&&new Date(p.scheduledAt)>=new Date()&&p.status!=='published').sort((a,b)=>new Date(a.scheduledAt)-new Date(b.scheduledAt)).slice(0,6);return `<div class="dashboard-hero"><div class="hero-row"><div class="hero-copy"><span class="eyebrow">LeadsPay · Conteúdo</span><h1>Olá, ${esc(roleName())}.</h1><p>Seu painel para organizar, revisar e preparar tudo que vai para o Instagram e para o site.</p></div><div class="hero-actions"><button class="btn" data-navjump="calendar">${icon('calendar')}<span>Ver calendário</span></button><button class="btn primary" data-new-platform="instagram" data-new-format="Carrossel">${icon('plus')}<span>Novo carrossel</span></button></div></div></div>`+localNotice()+`<div class="grid stats"><div class="stat"><div class="stat-top"><span class="stat-icon">${icon('approvals')}</span><span class="stat-kicker">Revisão</span></div><div class="num">${counts.review}</div><div class="hint">aguardando sua aprovação</div></div><div class="stat"><div class="stat-top"><span class="stat-icon">${icon('calendar')}</span><span class="stat-kicker">Agenda</span></div><div class="num">${counts.scheduled}</div><div class="hint">conteúdos programados</div></div><div class="stat"><div class="stat-top"><span class="stat-icon">${icon('edit')}</span><span class="stat-kicker">Ajustes</span></div><div class="num">${counts.changes}</div><div class="hint">alterações solicitadas</div></div><div class="stat"><div class="stat-top"><span class="stat-icon">${icon('check')}</span><span class="stat-kicker">Concluído</span></div><div class="num">${counts.published}</div><div class="hint">conteúdos publicados</div></div></div><div class="grid split"><div class="card"><div class="card-h"><h3>Próximas publicações</h3><button class="btn sm" data-navjump="calendar">Abrir calendário</button></div><div class="card-b">${upcoming.length?`<div class="list">${upcoming.map(rowHTML).join('')}</div>`:emptyHTML('▦','Nenhuma publicação agendada','Quando você agendar um conteúdo, ele aparece aqui.')}</div></div><div class="card"><div class="card-h"><h3>Ações rápidas</h3></div><div class="card-b"><div class="quick-grid"><button class="quick" data-new-platform="instagram" data-new-format="Carrossel"><span>${icon('carousel')}</span><b>Novo carrossel</b><small>Envie todos os slides de uma vez.</small></button><button class="quick" data-new-platform="instagram" data-new-format="Story"><span>${icon('story')}</span><b>Novo story</b><small>Organize conteúdo vertical.</small></button><button class="quick" data-new-platform="site" data-new-format="Banner"><span>${icon('image')}</span><b>Design do site</b><small>Banners, campanhas e telas.</small></button><button class="quick" data-navjump="approvals"><span>${icon('approvals')}</span><b>Aprovações</b><small>Revise o que está pendente.</small></button></div></div></div></div>`}
 function emptyHTML(icon,title,sub){return `<div class="empty"><div class="big">${icon}</div><b>${title}</b><div style="margin-top:5px;font-size:11px">${sub}</div></div>`}
 function rowHTML(p){return `<div class="row" data-open="${p.id}">${p.assets?.length?`<img class="thumb" data-asset-img="${p.assets[0].id}" alt="">`:`<div class="thumb ph">▧</div>`}<div class="row-main"><b>${esc(p.title)}</b><small>${esc(p.platform==='instagram'?'Instagram':'Site')} · ${esc(p.format)}${p.scheduledAt?' · '+new Date(p.scheduledAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):''}</small></div>${statusBadge(p.status)}</div>`}
 function filtered(platform=null){const q=state.search.toLowerCase();return state.projects.filter(p=>(!platform||p.platform===platform)&&(!q||[p.title,p.campaign,p.caption,(p.tags||[]).join(' '),p.format].join(' ').toLowerCase().includes(q)))}

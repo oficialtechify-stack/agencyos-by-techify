@@ -1,17 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
+    function authorized() {
+      return request.auth != null
+        && request.auth.token.email in [
+          "rickmarketing81@gmail.com",
+          "vitoriajob02@gmail.com"
+        ];
+    }
     match /users/{userId} {
-      allow read: if signedIn();
-      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow read: if authorized();
+      allow create, update: if authorized() && request.auth.uid == userId;
       allow delete: if false;
     }
-    match /projects/{projectId} { allow read, create, update, delete: if signedIn(); }
+    match /projects/{projectId} {
+      allow read, create, update, delete: if authorized();
+    }
     match /activity/{activityId} {
-      allow read, create: if signedIn();
+      allow read, create: if authorized();
       allow update, delete: if false;
     }
-    match /workspace/{document=**} { allow read, write: if signedIn(); }
+    match /workspace/{document=**} {
+      allow read, write: if authorized();
+    }
   }
 }

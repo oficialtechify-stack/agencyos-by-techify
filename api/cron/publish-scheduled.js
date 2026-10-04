@@ -1,10 +1,24 @@
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { listJson, readJson, removeJson, writeJson } from "../_lib/blob-store.js";
 import { approvalPath, fingerprintProject, publicationPath } from "../_lib/workflow.js";
 import { publishInstagram } from "../_lib/meta.js";
 
+const jwks=createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
+
+async function authorized(req){
+  const header=req.headers.authorization||"";
+  if(process.env.CRON_SECRET&&header==="Bearer "+process.env.CRON_SECRET) return true;
+  if(!header.startsWith("Bearer ")) return false;
+  try{
+    const token=header.slice(7);
+    const {payload}=await jwtVerify(token,jwks,{issuer:"https://token.actions.githubusercontent.com",audience:"leadspay-connect"});
+    return payload.repository==="oficialtechify-stack/agencyos-by-techify"&&payload.ref==="refs/heads/main";
+  }catch(e){console.warn("Scheduler auth failed",e.message);return false}
+}
+
 export default async function handler(req,res){
-  if(req.headers.authorization!=="Bearer "+process.env.CRON_SECRET) return res.status(401).json({ok:false});
-  const now=Date.now(), results=[];
+  if(!(await authorized(req))) return res.status(401).json({ok:false});
+  const now=Date.now(),results=[];
   try{
     const blobs=await listJson("workflow/schedules/");
     for(const blob of blobs){

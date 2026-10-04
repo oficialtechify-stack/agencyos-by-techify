@@ -1,0 +1,21 @@
+name: LeadsPay scheduled publishing
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger LeadsPay scheduler
+        shell: bash
+        run: |
+          RESPONSE=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=leadspay-connect")
+          TOKEN=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<< "$RESPONSE")
+          curl -fsS -H "Authorization: Bearer $TOKEN" "https://leadspay-connect.vercel.app/api/cron/publish-scheduled"

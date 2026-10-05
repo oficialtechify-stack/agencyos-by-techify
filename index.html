@@ -447,17 +447,40 @@ let state={view:(new URLSearchParams(location.search).get('open')==='chat'?'chat
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}
 function save(){localStorage.setItem(K.projects,JSON.stringify(state.projects));localStorage.setItem(K.activity,JSON.stringify(state.activity.slice(0,300)));localStorage.setItem(K.settings,JSON.stringify(state.settings));}
 function plain(v){return JSON.parse(JSON.stringify(v))}
-function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.code||e?.message||String(e);const msg=String(e?.code||'');if(msg.includes('permission-denied'))console.warn('Permissão de sincronização pendente.');else if(msg.includes('storage/'))toast('Não foi possível enviar o arquivo para o armazenamento compartilhado.','err');}
-async function persistProject(p){save();if(!state.user)return;try{await setDoc(doc(cloudDb,'projects',p.id),plain(p));state.cloudStatus='connected'}catch(e){cloudFail(e,'Salvar projeto')}}
-async function persistSettings(){save();if(!state.user)return;try{await setDoc(doc(cloudDb,'workspace','settings'),plain(state.settings),{merge:true})}catch(e){cloudFail(e,'Salvar configurações')}}
-async function removeProjectCloud(projectId){if(!state.user)return;try{await deleteDoc(doc(cloudDb,'projects',projectId))}catch(e){cloudFail(e,'Excluir projeto')}}
-function stopCloudSync(){for(const u of [unsubProjects,unsubActivity,unsubSettings]){try{u&&u()}catch{}}unsubProjects=unsubActivity=unsubSettings=null}
-function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';
-  unsubProjects=onSnapshot(collection(cloudDb,'projects'),snap=>{state.projects=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));save();state.cloudStatus='connected';if(state.role)render()},e=>cloudFail(e,'Sincronizar projetos'));
-  unsubActivity=onSnapshot(collection(cloudDb,'activity'),snap=>{state.activity=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).slice(0,300);save();if(state.role&&state.view==='history')render()},e=>cloudFail(e,'Sincronizar histórico'));
-  unsubSettings=onSnapshot(doc(cloudDb,'workspace','settings'),snap=>{if(snap.exists()){state.settings={...defaultSettings,...snap.data()};save();if(state.role)render()}},e=>cloudFail(e,'Sincronizar configurações'));
+function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.message||String(e)}
+async function persistProject(p){save();if(!state.user)return p;try{const d=await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})});const saved=d.project||p;const i=state.projects.findIndex(x=>x.id===saved.id);if(i>=0)state.projects[i]={...state.projects[i],...saved};else state.projects.unshift(saved);save();state.cloudStatus='connected';updateSyncChip();return saved}catch(e){cloudFail(e,'Salvar projeto');throw e}}
+async function persistSettings(){save();if(!state.user)return state.settings;try{const d=await apiAuth('/api/team?action=settings-save',{method:'POST',body:JSON.stringify({settings:plain(state.settings)})});state.settings={...defaultSettings,...(d.settings||state.settings)};save();state.cloudStatus='connected';updateSyncChip();return state.settings}catch(e){cloudFail(e,'Salvar configurações');throw e}}
+async function removeProjectCloud(projectId){if(!state.user)return;try{await apiAuth('/api/team?action=project-delete',{method:'POST',body:JSON.stringify({projectId})});state.cloudStatus='connected';updateSyncChip()}catch(e){cloudFail(e,'Excluir projeto');throw e}}
+function stopCloudSync(){if(unsubProjects)clearInterval(unsubProjects);unsubProjects=null;unsubActivity=unsubSettings=null}
+function updateSyncChip(){const chip=document.querySelector('.sync-chip');if(!chip)return;chip.classList.remove('connected','error','connecting');chip.classList.add(state.cloudStatus);const label=chip.childNodes[chip.childNodes.length-1];if(label)label.textContent=syncLabel()}
+function newer(a,b){return String(a?.updatedAt||a?.createdAt||'').localeCompare(String(b?.updatedAt||b?.createdAt||''))>=0?a:b}
+async function syncWorkspace(forceRender=false){
+  if(!state.user)return;
+  try{
+    const d=await apiAuth('/api/team?action=workspace');
+    const remote=Array.isArray(d.projects)?d.projects:[];
+    const local=Array.isArray(state.projects)?state.projects:[];
+    const map=new Map();
+    for(const p of remote)map.set(p.id,p);
+    const toPush=[];
+    for(const p of local){const r=map.get(p.id);if(!r){map.set(p.id,p);toPush.push(p)}else if(newer(p,r)===p&&String(p.updatedAt||'')>String(r.updatedAt||'')){map.set(p.id,p);toPush.push(p)}}
+    state.projects=[...map.values()].sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+    state.activity=Array.isArray(d.activity)&&d.activity.length?d.activity:state.activity;
+    if(d.settings&&Object.keys(d.settings).length)state.settings={...defaultSettings,...d.settings};
+    save();state.cloudStatus='connected';state.cloudError='';
+    updateSyncChip();
+    if(toPush.length){for(const p of toPush.slice(0,30)){try{await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})})}catch(e){console.warn('Migração de conteúdo',p.id,e.message)}}}
+    if(forceRender&&state.role)render();else if(state.role&&['dashboard','instagram','site','approvals','library','calendar','history'].includes(state.view))renderPage();
+  }catch(e){cloudFail(e,'Sincronizar workspace');updateSyncChip()}
 }
-async function storeFile(file,projectId,index){const assetId=id('asset');if(state.user){try{const safe=(file.name||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-');const path=`content/${projectId}/${String(index+1).padStart(2,'0')}-${assetId}-${safe}`;const r=storageRef(cloudStorage,path);await uploadBytes(r,file,{contentType:file.type||'application/octet-stream'});const url=await getDownloadURL(r);return {id:assetId,name:file.name,type:file.type,size:file.size,order:index,url,path}}catch(e){cloudFail(e,'Upload');toast('Não consegui enviar este arquivo ao armazenamento compartilhado. Vou manter uma cópia local neste navegador.','err')}}await putAsset({id:assetId,name:file.name,type:file.type,size:file.size,blob:file});return {id:assetId,name:file.name,type:file.type,size:file.size,order:index,localOnly:true}}
+function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>syncWorkspace(false),4000)}
+async function storeFile(file,projectId,index){
+  const token=await state.user.getIdToken();state.idToken=token;
+  const r=await fetch('/api/chat-upload?mode=content&name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});
+  let d={};try{d=await r.json()}catch{}
+  if(!r.ok)throw new Error(d.error||'Não foi possível enviar '+file.name);
+  return {...d.asset,order:index};
+}
 function findAsset(assetId){for(const p of state.projects){const a=(p.assets||[]).find(x=>x.id===assetId);if(a)return a}return null}
 
 function id(p='id'){return p+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
@@ -466,7 +489,7 @@ function roleName(){return state.profile?.name||(state.role==='admin'?state.sett
 function roleLabel(){return state.role==='admin'?'Administrador':'Designer'}
 function syncLabel(){return state.cloudStatus==='connected'?'Sincronizado':state.cloudStatus==='error'?'Atenção':'Sincronizando'}
 function nowLabel(d=new Date()){return d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
-function addActivity(action,projectId=null,detail=''){const item={id:id('act'),action,projectId,detail,by:roleName(),at:new Date().toISOString()};state.activity.unshift(item);save();if(state.user)setDoc(doc(cloudDb,'activity',item.id),plain(item)).catch(e=>cloudFail(e,'Salvar histórico'))}
+function addActivity(action,projectId=null,detail=''){const item={id:id('act'),action,projectId,detail,by:roleName(),at:new Date().toISOString()};state.activity.unshift(item);save();if(state.user)apiAuth('/api/team?action=activity-add',{method:'POST',body:JSON.stringify({activity:item})}).catch(e=>console.warn('Salvar histórico',e.message))}
 function toast(msg,type='ok'){const el=document.getElementById('toast');el.innerHTML='<div class="toast '+type+'">'+esc(msg)+'</div>';setTimeout(()=>el.innerHTML='',3200)}
 async function apiAuth(url,options={}){if(!state.user)throw new Error('Faça login novamente.');const token=await state.user.getIdToken();state.idToken=token;const headers={...(options.headers||{}),Authorization:'Bearer '+token};if(options.body&&!headers['Content-Type'])headers['Content-Type']='application/json';const r=await fetch(url,{...options,headers});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Não foi possível concluir a ação.');return d}
 async function apiAuthBlob(url){if(!state.user)throw new Error('Faça login novamente.');const token=await state.user.getIdToken();state.idToken=token;const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});if(!r.ok)throw new Error('Não foi possível abrir o arquivo.');return r.blob()}

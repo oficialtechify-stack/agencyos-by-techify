@@ -6,6 +6,10 @@
   "dependencies": {
     "@vercel/blob": "latest",
     "jose": "latest",
-    "web-push": "latest"
+    "web-push": "latest",
+    "@vercel/queue": "latest"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

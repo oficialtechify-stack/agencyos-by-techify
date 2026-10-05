@@ -59,6 +59,20 @@ export default async function handler(req,res){
       .map(x=>x.data)
       .filter(p=>p&&p.status==="scheduled"&&p.scheduledAt);
 
+    let automaticQueueHealthCheck=null;
+    if(!scheduledProjects.length&&!scheduleEntries.length){
+      const test=await send(SCHEDULE_TOPIC,{
+        projectId:"__queue_test__",
+        scheduledAt:new Date(now).toISOString(),
+        fingerprint:"queue-test",
+        hop:0
+      },{
+        retentionSeconds:300,
+        idempotencyKey:"leadspay-auto-queue-test-"+Math.floor(now/60000)
+      });
+      automaticQueueHealthCheck={messageId:test.messageId,sentAt:new Date().toISOString()};
+    }
+
     for(const project of scheduledProjects){
       const projectId=String(project.id||"");
       if(!projectId) continue;
@@ -157,6 +171,8 @@ export default async function handler(req,res){
       at:new Date(now).toISOString(),
       scheduledProjects:scheduledProjects.length,
       scheduleRecords:scheduleEntries.length,
+      automaticQueueHealthCheck,
+      automaticQueueHealthCheck,
       repaired,
       pending,
       recentScheduleActivities,

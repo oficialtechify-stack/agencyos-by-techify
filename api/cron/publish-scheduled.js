@@ -1,8 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { listJson, readJson, writeJson } from "../_lib/blob-store.js";
 import { approvalPath, fingerprintProject, publicProject, schedulePath } from "../_lib/workflow.js";
-import { enqueueScheduledPublish, processScheduledPublish, SCHEDULE_TOPIC } from "../_lib/scheduled-publish.js";
-import { send } from "@vercel/queue";
+import { enqueueScheduledPublish, processScheduledPublish } from "../_lib/scheduled-publish.js";
 
 const jwks=createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
 
@@ -33,19 +32,6 @@ export default async function handler(req,res){
   const repaired=[];
 
   try{
-    if(String(req.query?.testQueue||"")==="1"){
-      const test=await send(SCHEDULE_TOPIC,{
-        projectId:"__queue_test__",
-        scheduledAt:new Date(now).toISOString(),
-        fingerprint:"queue-test",
-        hop:0
-      },{
-        retentionSeconds:300,
-        idempotencyKey:"leadspay-queue-test-"+Math.floor(now/60000)
-      });
-      console.log("queue_test_sent",test.messageId);
-      return res.status(200).json({ok:true,testQueue:true,messageId:test.messageId});
-    }
     // Recover old schedules that were only marked in the workspace but never made it
     // into the scheduler queue (this is what happened with the missed post).
     const [scheduleEntries,workspaceEntries,activityEntries]=await Promise.all([
@@ -59,19 +45,6 @@ export default async function handler(req,res){
       .map(x=>x.data)
       .filter(p=>p&&p.status==="scheduled"&&p.scheduledAt);
 
-    let automaticQueueHealthCheck=null;
-    if(!scheduledProjects.length&&!scheduleEntries.length){
-      const test=await send(SCHEDULE_TOPIC,{
-        projectId:"__queue_test__",
-        scheduledAt:new Date(now).toISOString(),
-        fingerprint:"queue-test",
-        hop:0
-      },{
-        retentionSeconds:300,
-        idempotencyKey:"leadspay-auto-queue-test-"+Math.floor(now/60000)
-      });
-      automaticQueueHealthCheck={messageId:test.messageId,sentAt:new Date().toISOString()};
-    }
 
     for(const project of scheduledProjects){
       const projectId=String(project.id||"");
@@ -171,8 +144,6 @@ export default async function handler(req,res){
       at:new Date(now).toISOString(),
       scheduledProjects:scheduledProjects.length,
       scheduleRecords:scheduleEntries.length,
-      automaticQueueHealthCheck,
-      automaticQueueHealthCheck,
       repaired,
       pending,
       recentScheduleActivities,

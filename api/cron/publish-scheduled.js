@@ -1,9 +1,10 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import { listJson, readJson, removeJson, writeJson } from "../_lib/blob-store.js";
-import { approvalPath, fingerprintProject, publicationPath } from "../_lib/workflow.js";
-import { publishInstagram } from "../_lib/meta.js";
+import { listJson, readJson, writeJson } from "../_lib/blob-store.js";
+import { approvalPath, fingerprintProject, publicProject, schedulePath } from "../_lib/workflow.js";
+import { enqueueScheduledPublish, processScheduledPublish } from "../_lib/scheduled-publish.js";
 
 const jwks=createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
+
 async function authorized(req){
   const header=req.headers.authorization||"";
   if(process.env.CRON_SECRET&&header==="Bearer "+process.env.CRON_SECRET) return true;
@@ -12,41 +13,123 @@ async function authorized(req){
     const token=header.slice(7);
     const {payload}=await jwtVerify(token,jwks,{issuer:"https://token.actions.githubusercontent.com",audience:"leadspay-connect"});
     return payload.repository==="oficialtechify-stack/agencyos-by-techify"&&payload.ref==="refs/heads/main";
-  }catch(e){console.warn("Scheduler auth failed",e.message);return false}
+  }catch(e){
+    console.warn("Scheduler auth failed",e.message);
+    return false;
+  }
 }
-async function updateWorkspace(id,patch){
-  const path="workspace/projects/"+encodeURIComponent(id)+".json";
-  const existing=await readJson(path);
-  if(existing) await writeJson(path,{...existing,...patch,updatedAt:new Date().toISOString()});
+
+async function allJson(prefix){
+  const blobs=await listJson(prefix);
+  return (await Promise.all(blobs.map(async b=>({pathname:b.pathname,data:await readJson(b.pathname)})))).filter(x=>x.data);
 }
+
 export default async function handler(req,res){
   if(!(await authorized(req))) return res.status(401).json({ok:false});
-  const now=Date.now(),results=[],pending=[];
+
+  const now=Date.now();
+  const results=[];
+  const repaired=[];
+
   try{
-    const blobs=await listJson("workflow/schedules/");
-    for(const blob of blobs){
-      const job=await readJson(blob.pathname);
-      if(!job){results.push({status:"invalid-schedule-record",pathname:blob.pathname});continue}
-      const scheduledMs=new Date(job.scheduledAt).getTime();
-      if(!Number.isFinite(scheduledMs)){results.push({id:job.projectId,status:"invalid-date"});continue}
-      if(scheduledMs>now){pending.push({id:job.projectId,title:job.project?.title||"",scheduledAt:job.scheduledAt,minutesUntil:Math.round((scheduledMs-now)/60000)});continue}
-      const existing=await readJson(publicationPath(job.projectId));
-      if(existing){await removeJson(blob.pathname);await updateWorkspace(job.projectId,{status:"published",publishedAt:existing.publishedAt,metaMediaId:existing.mediaId,scheduledAt:null});results.push({id:job.projectId,status:"already-published"});continue}
-      const approval=await readJson(approvalPath(job.projectId));
-      if(!approval||approval.fingerprint!==fingerprintProject(job.project)){await removeJson(blob.pathname);await updateWorkspace(job.projectId,{status:"changes",scheduledAt:null});results.push({id:job.projectId,status:"approval-invalid"});continue}
-      try{
-        const result=await publishInstagram(job.project);
-        const publication={projectId:job.projectId,fingerprint:job.fingerprint,...result,publishedBy:"scheduler",publishedByName:"Agendamento automático"};
-        await writeJson(publicationPath(job.projectId),publication);
-        await removeJson(blob.pathname);
-        await updateWorkspace(job.projectId,{status:"published",publishedAt:publication.publishedAt,metaMediaId:publication.mediaId,scheduledAt:null});
-        results.push({id:job.projectId,status:"published",mediaId:result.mediaId});
-      }catch(e){
-        await updateWorkspace(job.projectId,{status:"failed"});
-        results.push({id:job.projectId,status:"error",error:e.message})
+    // Recover old schedules that were only marked in the workspace but never made it
+    // into the scheduler queue (this is what happened with the missed post).
+    const [scheduleEntries,workspaceEntries]=await Promise.all([
+      allJson("workflow/schedules/"),
+      allJson("workspace/projects/")
+    ]);
+
+    const scheduleById=new Map(scheduleEntries.map(x=>[String(x.data.projectId||""),x.data]));
+    const scheduledProjects=workspaceEntries
+      .map(x=>x.data)
+      .filter(p=>p&&p.status==="scheduled"&&p.scheduledAt);
+
+    for(const project of scheduledProjects){
+      const projectId=String(project.id||"");
+      if(!projectId) continue;
+
+      let job=scheduleById.get(projectId);
+      if(!job){
+        const approval=await readJson(approvalPath(projectId));
+        const fingerprint=fingerprintProject(project);
+        if(!approval||approval.fingerprint!==fingerprint){
+          results.push({id:projectId,status:"cannot-repair-approval-invalid"});
+          continue;
+        }
+        job={
+          projectId,
+          project:publicProject(project),
+          fingerprint,
+          scheduledAt:String(project.scheduledAt),
+          scheduledBy:"recovery",
+          createdAt:new Date().toISOString(),
+          updatedAt:new Date().toISOString()
+        };
+        await writeJson(schedulePath(projectId),job);
+        scheduleById.set(projectId,job);
+        repaired.push({id:projectId,status:"schedule-record-recreated"});
+      }
+
+      const dueMs=new Date(job.scheduledAt).getTime();
+      if(!Number.isFinite(dueMs)){
+        results.push({id:projectId,status:"invalid-date"});
+        continue;
+      }
+
+      if(dueMs<=now+15_000){
+        try{
+          const result=await processScheduledPublish({
+            projectId,
+            scheduledAt:job.scheduledAt,
+            fingerprint:job.fingerprint,
+            hop:Number(job.queue?.hop||0)
+          });
+          results.push({id:projectId,...result});
+        }catch(error){
+          results.push({id:projectId,status:"error",error:error?.message||String(error)});
+        }
+      }else if(!job.queue?.messageId){
+        try{
+          const queue=await enqueueScheduledPublish(job,0);
+          job={...job,queue,updatedAt:new Date().toISOString()};
+          await writeJson(schedulePath(projectId),job);
+          repaired.push({id:projectId,status:"queued",scheduledAt:job.scheduledAt,messageId:queue.messageId});
+        }catch(error){
+          results.push({id:projectId,status:"queue-error",error:error?.message||String(error)});
+        }
       }
     }
-    console.log("scheduler_scan",JSON.stringify({at:new Date(now).toISOString(),scheduleBlobs:blobs.length,pending,results}));
-    res.status(200).json({ok:true,at:new Date(now).toISOString(),scheduleBlobs:blobs.length,pending,results});
-  }catch(e){console.error(e);res.status(500).json({ok:false,error:e.message})}
+
+    const pending=[...scheduleById.values()]
+      .filter(job=>Number.isFinite(new Date(job.scheduledAt).getTime())&&new Date(job.scheduledAt).getTime()>now)
+      .map(job=>({
+        id:job.projectId,
+        title:job.project?.title||"",
+        scheduledAt:job.scheduledAt,
+        queueMessageId:job.queue?.messageId||null,
+        minutesUntil:Math.round((new Date(job.scheduledAt).getTime()-now)/60000)
+      }));
+
+    console.log("scheduler_recovery",JSON.stringify({
+      at:new Date(now).toISOString(),
+      scheduledProjects:scheduledProjects.length,
+      scheduleRecords:scheduleEntries.length,
+      repaired,
+      pending,
+      results
+    }));
+
+    res.status(200).json({
+      ok:true,
+      at:new Date(now).toISOString(),
+      scheduledProjects:scheduledProjects.length,
+      scheduleRecords:scheduleEntries.length,
+      repaired,
+      pending,
+      results
+    });
+  }catch(e){
+    console.error("scheduler_recovery_error",e);
+    res.status(500).json({ok:false,error:e?.message||String(e)});
+  }
 }

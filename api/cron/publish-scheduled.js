@@ -21,12 +21,15 @@ async function updateWorkspace(id,patch){
 }
 export default async function handler(req,res){
   if(!(await authorized(req))) return res.status(401).json({ok:false});
-  const now=Date.now(),results=[];
+  const now=Date.now(),results=[],pending=[];
   try{
     const blobs=await listJson("workflow/schedules/");
     for(const blob of blobs){
       const job=await readJson(blob.pathname);
-      if(!job||new Date(job.scheduledAt).getTime()>now) continue;
+      if(!job){results.push({status:"invalid-schedule-record",pathname:blob.pathname});continue}
+      const scheduledMs=new Date(job.scheduledAt).getTime();
+      if(!Number.isFinite(scheduledMs)){results.push({id:job.projectId,status:"invalid-date"});continue}
+      if(scheduledMs>now){pending.push({id:job.projectId,title:job.project?.title||"",scheduledAt:job.scheduledAt,minutesUntil:Math.round((scheduledMs-now)/60000)});continue}
       const existing=await readJson(publicationPath(job.projectId));
       if(existing){await removeJson(blob.pathname);await updateWorkspace(job.projectId,{status:"published",publishedAt:existing.publishedAt,metaMediaId:existing.mediaId,scheduledAt:null});results.push({id:job.projectId,status:"already-published"});continue}
       const approval=await readJson(approvalPath(job.projectId));
@@ -43,6 +46,7 @@ export default async function handler(req,res){
         results.push({id:job.projectId,status:"error",error:e.message})
       }
     }
-    res.status(200).json({ok:true,results});
+    console.log("scheduler_scan",JSON.stringify({at:new Date(now).toISOString(),scheduleBlobs:blobs.length,pending,results}));
+    res.status(200).json({ok:true,at:new Date(now).toISOString(),scheduleBlobs:blobs.length,pending,results});
   }catch(e){console.error(e);res.status(500).json({ok:false,error:e.message})}
 }

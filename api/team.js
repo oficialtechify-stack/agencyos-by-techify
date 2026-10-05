@@ -126,7 +126,7 @@ export default async function handler(req,res){
       if(req.method!=="POST")return res.status(405).json({ok:false,error:"Método não permitido."});
       const p=req.body?.profile||{};
       const existing=await readJson(profilePath(user.role));
-      const record={...(existing||{}),name:String(p.name||user.name).trim().slice(0,100)||user.name,jobTitle:String(p.jobTitle||user.role==="admin"?"Administrador":"Designer").slice(0,100),phone:String(p.phone||"").slice(0,40),instagram:String(p.instagram||"").slice(0,100),bio:String(p.bio||"").slice(0,500),role:user.role,email:user.email,updatedAt:new Date().toISOString(),createdAt:existing?.createdAt||new Date().toISOString()};
+      const record={...(existing||{}),name:String(p.name||user.name).trim().slice(0,100)||user.name,jobTitle:String(p.jobTitle||(user.role==="admin"?"Administrador":"Designer")).slice(0,100),phone:String(p.phone||"").slice(0,40),instagram:String(p.instagram||"").slice(0,100),bio:String(p.bio||"").slice(0,500),role:user.role,email:user.email,updatedAt:new Date().toISOString(),createdAt:existing?.createdAt||new Date().toISOString()};
       await writeJson(profilePath(user.role),record);
       return res.status(200).json({ok:true,profile:record});
     }

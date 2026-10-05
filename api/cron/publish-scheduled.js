@@ -111,25 +111,33 @@ export default async function handler(req,res){
         minutesUntil:Math.round((new Date(job.scheduledAt).getTime()-now)/60000)
       }));
 
-    const recentScheduleActivities=activityEntries
+    const rawScheduleActivities=activityEntries
       .map(x=>x.data)
       .filter(a=>String(a?.action||"").toLowerCase().includes("agendou"))
       .sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")))
-      .slice(0,20)
-      .map(a=>{
-        const project=workspaceEntries.map(x=>x.data).find(p=>String(p?.id||"")===String(a.projectId||""));
-        return {
-          id:a.id,
-          projectId:a.projectId||null,
-          action:a.action,
-          detail:a.detail||"",
-          at:a.at||null,
-          by:a.by||"",
-          currentProjectStatus:project?.status||null,
-          currentProjectTitle:project?.title||null,
-          currentScheduledAt:project?.scheduledAt||null
-        };
-      });
+      .slice(0,20);
+
+    const recentScheduleActivities=await Promise.all(rawScheduleActivities.map(async a=>{
+      const project=workspaceEntries.map(x=>x.data).find(p=>String(p?.id||"")===String(a.projectId||""));
+      const publication=a.projectId?await readJson("workflow/publications/"+encodeURIComponent(a.projectId)+".json"):null;
+      return {
+        id:a.id,
+        projectId:a.projectId||null,
+        action:a.action,
+        detail:a.detail||"",
+        at:a.at||null,
+        by:a.by||"",
+        currentProjectStatus:project?.status||null,
+        currentProjectTitle:project?.title||null,
+        currentScheduledAt:project?.scheduledAt||null,
+        publication:publication?{
+          mediaId:publication.mediaId||null,
+          publishedAt:publication.publishedAt||null,
+          publishedBy:publication.publishedBy||null,
+          publishedByName:publication.publishedByName||null
+        }:null
+      };
+    }));
 
     console.log("scheduler_recovery",JSON.stringify({
       at:new Date(now).toISOString(),

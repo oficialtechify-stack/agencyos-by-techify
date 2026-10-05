@@ -1,9 +1,15 @@
 {
   "cleanUrls": true,
-  "crons": [
-    {
-      "path": "/api/cron/publish-scheduled",
-      "schedule": "*/5 * * * *"
+  "functions": {
+    "api/queue-publish.js": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "instagram-scheduled-publish",
+          "retryAfterSeconds": 60,
+          "initialDelaySeconds": 0
+        }
+      ]
     }
-  ]
+  }
 }

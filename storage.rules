@@ -1,15 +1,14 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function authorized() {
-      return request.auth != null
-        && request.auth.token.email in [
-          "rickmarketing81@gmail.com",
-          "vitoriajob02@gmail.com"
-        ];
+    function isTeam() {
+      return request.auth != null && request.auth.token.email in [
+        'rickmarketing81@gmail.com',
+        'vitoriajob02@gmail.com'
+      ];
     }
     match /content/{allPaths=**} {
-      allow read, write: if authorized();
+      allow read, write: if isTeam();
     }
   }
 }

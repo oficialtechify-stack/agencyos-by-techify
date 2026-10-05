@@ -431,6 +431,7 @@ body{
 /* phones */
 @media(max-width:760px){
   html,body{min-width:0;overflow-x:hidden}
+  .content:has(.chat-shell){height:calc(100dvh - 130px)!important;max-height:calc(100dvh - 130px)!important;padding:8px 10px 6px!important}
   body.menu-open{overflow:hidden}
   .app{display:block;min-height:100dvh}
   .main{min-width:0;padding-bottom:70px}
@@ -711,7 +712,7 @@ function otherPersonFallback(){return state.role==='admin'?(state.settings.desig
 function presenceShortLabel(){const p=state.otherPresence,name=p?.name||otherPersonFallback();return p?.online?name+' online':name+' offline'}
 function presenceLongLabel(){const p=state.otherPresence;if(p?.online)return 'Online agora';if(!p?.lastSeen)return 'Offline';const d=new Date(p.lastSeen),diff=Date.now()-d.getTime();if(diff<60000)return 'Visto há instantes';if(diff<3600000)return 'Visto há '+Math.max(1,Math.floor(diff/60000))+' min';return 'Visto '+d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
 function updatePresenceUI(){const chip=document.getElementById('otherPresenceTop');if(chip){chip.classList.toggle('online',!!state.otherPresence?.online);const label=chip.querySelector('span:last-child');if(label)label.textContent=presenceShortLabel()}const dot=document.getElementById('chatPresenceDot');if(dot)dot.classList.toggle('online',!!state.otherPresence?.online);const txt=document.getElementById('chatPresenceText');if(txt)txt.textContent=presenceLongLabel()}
-function updateChatBadge(){const b=document.querySelector('[data-nav="chat"]');if(!b)return;let x=b.querySelector('.nav-count');if(state.chatUnread>0){if(!x){x=document.createElement('span');x.className='nav-count';b.appendChild(x)}x.textContent=state.chatUnread>99?'99+':String(state.chatUnread)}else if(x)x.remove()}
+function updateChatBadge(){document.querySelectorAll('[data-nav="chat"]').forEach(b=>{let x=b.querySelector('.nav-count, i');if(state.chatUnread>0){if(!x){x=document.createElement(b.closest('.mobile-bottom-nav')?'i':'span');if(!b.closest('.mobile-bottom-nav'))x.className='nav-count';b.appendChild(x)}x.textContent=state.chatUnread>99?'99+':String(state.chatUnread)}else if(x)x.remove()})}
 function markChatRead(){const msgs=state.chatMessages||[];const last=msgs[msgs.length-1];if(last){localStorage.setItem(K.chatRead,last.at||new Date().toISOString());state.chatUnread=0;updateChatBadge()}}
 async function sendPresence(){if(!state.user)return;try{await apiAuth('/api/team?action=presence',{method:'POST',body:JSON.stringify({visible:document.visibilityState==='visible'})})}catch(e){console.warn('Presence',e.message)}}
 async function pollPresence(){if(!state.user)return;try{const d=await apiAuth('/api/team?action=presence');state.otherPresence=d.other||null;updatePresenceUI()}catch(e){console.warn('Presence poll',e.message)}}

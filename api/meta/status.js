@@ -1,10 +1,21 @@
-import { getMetaConnection, saveMetaConnection, validateMetaToken } from "../_lib/meta.js";
+import { requireTeamUser, sendApiError } from "../_lib/auth.js";
+import { disconnectMeta, getMetaConnection, saveMetaConnection, validateMetaToken } from "../_lib/meta.js";
 
 function parseCookies(header = "") {
   return Object.fromEntries(header.split(";").map(p=>p.trim()).filter(Boolean).map(p=>{const i=p.indexOf("=");return [p.slice(0,i),decodeURIComponent(p.slice(i+1))]}));
 }
 export default async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
+
+  if(req.method==="POST"&&String(req.query?.action||"")==="disconnect"){
+    try{
+      await requireTeamUser(req,["admin"]);
+      await disconnectMeta();
+      return res.status(200).json({ok:true});
+    }catch(e){return sendApiError(res,e)}
+  }
+  if(req.method!=="GET") return res.status(405).json({ok:false,error:"Método não permitido."});
+
   const configured=Boolean(process.env.META_INSTAGRAM_APP_ID&&process.env.META_INSTAGRAM_APP_SECRET&&process.env.META_INSTAGRAM_REDIRECT_URI);
   try{
     let connection=await getMetaConnection();

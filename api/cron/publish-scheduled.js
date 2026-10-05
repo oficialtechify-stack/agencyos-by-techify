@@ -34,9 +34,10 @@ export default async function handler(req,res){
   try{
     // Recover old schedules that were only marked in the workspace but never made it
     // into the scheduler queue (this is what happened with the missed post).
-    const [scheduleEntries,workspaceEntries]=await Promise.all([
+    const [scheduleEntries,workspaceEntries,activityEntries]=await Promise.all([
       allJson("workflow/schedules/"),
-      allJson("workspace/projects/")
+      allJson("workspace/projects/"),
+      allJson("workspace/activity/")
     ]);
 
     const scheduleById=new Map(scheduleEntries.map(x=>[String(x.data.projectId||""),x.data]));
@@ -110,12 +111,33 @@ export default async function handler(req,res){
         minutesUntil:Math.round((new Date(job.scheduledAt).getTime()-now)/60000)
       }));
 
+    const recentScheduleActivities=activityEntries
+      .map(x=>x.data)
+      .filter(a=>String(a?.action||"").toLowerCase().includes("agendou"))
+      .sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")))
+      .slice(0,20)
+      .map(a=>{
+        const project=workspaceEntries.map(x=>x.data).find(p=>String(p?.id||"")===String(a.projectId||""));
+        return {
+          id:a.id,
+          projectId:a.projectId||null,
+          action:a.action,
+          detail:a.detail||"",
+          at:a.at||null,
+          by:a.by||"",
+          currentProjectStatus:project?.status||null,
+          currentProjectTitle:project?.title||null,
+          currentScheduledAt:project?.scheduledAt||null
+        };
+      });
+
     console.log("scheduler_recovery",JSON.stringify({
       at:new Date(now).toISOString(),
       scheduledProjects:scheduledProjects.length,
       scheduleRecords:scheduleEntries.length,
       repaired,
       pending,
+      recentScheduleActivities,
       results
     }));
 
@@ -126,6 +148,7 @@ export default async function handler(req,res){
       scheduleRecords:scheduleEntries.length,
       repaired,
       pending,
+      recentScheduleActivities,
       results
     });
   }catch(e){

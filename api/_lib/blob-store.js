@@ -6,6 +6,7 @@ function storageError(error, operation) {
   const message = String(error?.message || "");
   if (/suspended|403|forbidden|unauthorized|quota|billing/i.test(message) || error?.statusCode === 403) {
     const failure = new Error("O armazenamento do LeadsPay Connect está indisponível. Os dados existentes foram preservados; verifique o Vercel Blob antes de tentar novamente.");
+    failure.status = 503;
     failure.statusCode = 503;
     failure.code = "STORAGE_UNAVAILABLE";
     failure.cause = error;

@@ -10,7 +10,15 @@ const settingsPath="workspace/settings.json";
 const profilePath=role=>"workspace/profiles/"+role+".json";
 
 function status(record){if(!record)return {online:false,lastSeen:null,visible:false};const age=Date.now()-new Date(record.lastSeen||0).getTime();return {...record,online:age<55000&&record.visible!==false}}
-function cleanAttachment(a){if(!a||typeof a!=="object")return null;const pathname=String(a.pathname||"");if(!pathname.startsWith("chat/files/")&&!/^chat\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(pathname))return null;return {pathname,name:String(a.name||"arquivo").slice(0,180),type:String(a.type||"application/octet-stream").slice(0,120),size:Math.max(0,Number(a.size||0)),url:a.url&&String(a.url).startsWith("https://firebasestorage.googleapis.com/")?String(a.url).slice(0,2000):""}}
+function cleanAttachment(a){
+ if(!a||typeof a!=="object")return null;
+ const pathname=String(a.pathname||"");
+ const valid=pathname.startsWith("chat/files/")||/^cloudinary:[a-zA-Z0-9_/-]+$/.test(pathname)||/^chat\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(pathname);
+ if(!valid)return null;
+ const url=String(a.url||"");
+ const allowed=url.startsWith("https://res.cloudinary.com/")||url.startsWith("https://firebasestorage.googleapis.com/");
+ return {pathname,name:String(a.name||"arquivo").slice(0,180),type:String(a.type||"application/octet-stream").slice(0,120),size:Math.max(0,Number(a.size||0)),url:allowed?url.slice(0,2000):""};
+}
 function cleanProject(input){
   const p=input||{};
   return {

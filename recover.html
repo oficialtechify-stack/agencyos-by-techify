@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recuperação · LeadsPay Connect</title>
+<style>body{margin:0;background:#080610;color:#f7f3ff;font:15px/1.55 system-ui,sans-serif}main{max-width:720px;margin:6vh auto;padding:28px;background:#151021;border:1px solid #3c2d55;border-radius:20px}h1{margin-top:0}p{color:#c9bddb}button,input{font:inherit}input{box-sizing:border-box;width:100%;padding:12px;margin:7px 0 16px;border:1px solid #5c4877;border-radius:9px;background:#0b0812;color:#fff}button{background:#8654e8;border:0;border-radius:9px;padding:12px 18px;color:white;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}#log{white-space:pre-wrap;overflow-wrap:anywhere;background:#0b0812;padding:15px;border-radius:10px;min-height:70px}a{color:#d3b8ff}.muted{font-size:13px}</style></head>
+<body><main><h1>Recuperação de registros</h1><p>Ferramenta de importação controlada para o Firebase. O arquivo original fica no seu navegador até você confirmar. Nenhum registro existente é sobrescrito e nenhuma publicação é disparada.</p>
+<p><strong>Importante:</strong> este recurso recupera metadados, aprovações e histórico. As imagens ainda precisam ser recuperadas do Vercel Blob. Não exclua o backup nem o armazenamento original.</p>
+<section id="login"><label>E-mail do administrador<input id="email" type="email" autocomplete="username"></label><label>Senha Firebase<input id="password" type="password" autocomplete="current-password"></label><button id="signin">Entrar para recuperar</button></section>
+<section id="restore" hidden><p>Conectado como <strong id="who"></strong></p><label>Selecione o backup JSON<input id="backup" type="file" accept="application/json,.json"></label><button id="check">Verificar backup</button> <button id="import" disabled>Importar apenas registros ausentes</button></section>
+<pre id="log" role="status">Entre na conta do administrador para começar.</pre><p class="muted"><a href="/">Voltar ao LeadsPay Connect</a> · A migração do Blob antigo não acontece nesta tela.</p></main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+const config={apiKey:"AIzaSyBROk9UeKSeF2mv3XZ3t1moIrCRYwGEowA",authDomain:"leadspay-connect.firebaseapp.com",projectId:"leadspay-connect",appId:"1:543451390719:web:68fc1e459c2f65f53d62ca"};
+const auth=getAuth(initializeApp(config)),db=getFirestore(auth.app),byId=x=>document.getElementById(x),log=x=>byId("log").textContent=x;
+let payload=null;
+onAuthStateChanged(auth,user=>{const ok=user?.email?.toLowerCase()==="rickmarketing81@gmail.com";byId("login").hidden=ok;byId("restore").hidden=!ok;if(ok){byId("who").textContent=user.email;log("Selecione o backup exportado do LeadsPay Connect.")}else log("Apenas o administrador autorizado pode importar registros.")});
+byId("signin").onclick=async()=>{try{await signInWithEmailAndPassword(auth,byId("email").value.trim(),byId("password").value)}catch(e){log("Falha no login: "+e.code)}};
+const pathId=path=>btoa(unescape(encodeURIComponent(path))).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
+function record(path,json){return {path,json:JSON.stringify(json),updatedAt:new Date().toISOString()}}
+byId("check").onclick=async()=>{payload=null;byId("import").disabled=true;try{
+ const f=byId("backup").files[0];if(!f||f.size>5*1024*1024)throw Error("Escolha um JSON válido com até 5 MB.");
+ const d=JSON.parse(await f.text());
+ if(d.version!==1||!Array.isArray(d.projects)||!Array.isArray(d.activity))throw Error("Formato de backup desconhecido.");
+ if(d.projects.some(p=>!p.id||!p.title||!Array.isArray(p.assets))||d.projects.length>500||d.activity.length>2000)throw Error("Estrutura inválida ou tamanho inesperado.");
+ const paths=d.projects.map(p=>"workspace/projects/"+encodeURIComponent(p.id)+".json");
+ if(new Set(paths).size!==paths.length)throw Error("O backup possui IDs duplicados.");
+ payload=d;byId("import").disabled=false;
+ log("Backup validado: "+d.projects.length+" projetos, "+d.activity.length+" atividades, "+d.projects.reduce((n,p)=>n+p.assets.length,0)+" referências de arquivo.\nNada foi alterado.\nA importação adicionará apenas documentos ausentes.");
+}catch(e){log(e.message)}};
+byId("import").onclick=async()=>{if(!payload||auth.currentUser?.email?.toLowerCase()!=="rickmarketing81@gmail.com")return;byId("import").disabled=true;let saved=0,skipped=0;
+try{
+ const rows=[...payload.projects.map(p=>["workspace/projects/"+encodeURIComponent(p.id)+".json",p]),...payload.activity.map(a=>["workspace/activity/"+encodeURIComponent(a.id)+".json",a])];
+ if(payload.settings)rows.push(["workspace/settings.json",payload.settings]);
+ for(const [path,value] of rows){
+ const ref=doc(db,"connectRecords",pathId(path));
+ const existing=await getDoc(ref);
+ if(existing.exists()){skipped++;continue}
+ await setDoc(ref,record(path,value));saved++;
+ }
+ log("Importação concluída: "+saved+" registros criados; "+skipped+" já existentes preservados.\nOs arquivos de imagem permanecem pendentes de recuperação.\nMantenha o backup original.");
+}catch(e){log("Importação interrompida após "+saved+" registros criados. Não houve sobrescrita.\n"+e.message+"\nVerifique se as regras do Firestore foram publicadas antes de tentar novamente.")}finally{byId("import").disabled=false}};
+</script></body></html>

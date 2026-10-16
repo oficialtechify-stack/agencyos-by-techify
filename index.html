@@ -620,7 +620,7 @@ button:disabled{opacity:.58;cursor:not-allowed}
 
 </style>
 </head>
-<body><div id="root"></div><div id="overlay"></div><div id="toast"></div><aside id="syncAlert" role="alert" hidden><strong>Problema de sincronização</strong><span id="syncAlertText"></span><button id="backupLocalBtn" type="button" style="display:block;margin-top:12px;border-radius:9px;padding:9px 12px;background:#8250d9;border:1px solid #a88ce5;color:white;font-weight:700">Salvar cópia local dos registros</button></aside>
+<body><div id="root"></div><div id="overlay"></div><div id="toast"></div><aside id="syncAlert" role="alert" hidden><strong>Problema de sincronização</strong><span id="syncAlertText"></span><button id="backupLocalBtn" type="button" style="display:block;margin-top:12px;border-radius:9px;padding:9px 12px;background:#8250d9;border:1px solid #a88ce5;color:white;font-weight:700">Salvar cópia local dos registros</button><a href="/recover" style="display:inline-block;margin-top:10px;color:#f4d9ff;text-decoration:underline">Abrir recuperação dos registros</a></aside>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
@@ -684,7 +684,7 @@ function save(){localStorage.setItem(K.projects,JSON.stringify(state.projects));
 function plain(v){return JSON.parse(JSON.stringify(v))}
 function exportLocalBackup(){const backup={version:1,exportedAt:new Date().toISOString(),origin:location.origin,projects:state.projects,activity:state.activity,settings:state.settings};const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='leadspay-connect-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 document.getElementById('backupLocalBtn')?.addEventListener('click',exportLocalBackup);
-function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.message||String(e);updateSyncChip();const el=document.getElementById('syncAlert');const message=document.getElementById('syncAlertText');if(el&&message){message.textContent=context+': '+state.cloudError+' Os dados locais não serão enviados automaticamente até a conexão ser restabelecida.';el.hidden=false}}
+function cloudFail(e,context='Sincronização'){console.error(context,e);if(/armazenamento|Blob|Firestore|indisponível|403/i.test(e?.message||''))stopCloudSync();state.cloudStatus='error';state.cloudError=e?.message||String(e);updateSyncChip();const el=document.getElementById('syncAlert');const message=document.getElementById('syncAlertText');if(el&&message){message.textContent=context+': '+state.cloudError+' Os dados locais estão protegidos. Use a página de recuperação para restaurar os registros sem sobrescrever o histórico.';el.hidden=false}}
 async function persistProject(p){save();if(!state.user)return p;try{const d=await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})});const saved=d.project||p;const i=state.projects.findIndex(x=>x.id===saved.id);if(i>=0)state.projects[i]={...state.projects[i],...saved};else state.projects.unshift(saved);save();state.cloudStatus='connected';updateSyncChip();return saved}catch(e){cloudFail(e,'Salvar projeto');throw e}}
 async function persistSettings(){save();if(!state.user)return state.settings;try{const d=await apiAuth('/api/team?action=settings-save',{method:'POST',body:JSON.stringify({settings:plain(state.settings)})});state.settings={...defaultSettings,...(d.settings||state.settings)};save();state.cloudStatus='connected';updateSyncChip();return state.settings}catch(e){cloudFail(e,'Salvar configurações');throw e}}
 async function removeProjectCloud(projectId){if(!state.user)return;try{await apiAuth('/api/team?action=project-delete',{method:'POST',body:JSON.stringify({projectId})});state.cloudStatus='connected';updateSyncChip()}catch(e){cloudFail(e,'Excluir projeto');throw e}}
@@ -702,11 +702,11 @@ async function syncWorkspace(forceRender=false){
     state.activity=Array.isArray(d.activity)&&d.activity.length?d.activity:state.activity;
     if(d.settings&&Object.keys(d.settings).length)state.settings={...defaultSettings,...d.settings};
     save();state.cloudStatus='connected';state.cloudError='';updateSyncChip();
-    if(toPush.length){for(const p of toPush.slice(0,30)){try{await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})})}catch(e){cloudFail(e,'Enviar conteúdo pendente');break}}}
+    if(toPush.length){console.info('Registros locais preservados sem envio automático:',toPush.length)}
     if(forceRender&&state.role)render();else if(state.role&&['dashboard','instagram','site','approvals','library','calendar','history'].includes(state.view))renderPage();
   }catch(e){cloudFail(e,'Sincronizar workspace');updateSyncChip()}
 }
-function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>{if(!document.hidden)syncWorkspace(false)},15000)}
+function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>{if(!document.hidden&&state.cloudStatus!=='error')syncWorkspace(false)},30000)}
 async function storeFile(file,projectId,index){
   const token=await state.user.getIdToken();state.idToken=token;
   const r=await fetch('/api/chat-upload?mode=content&name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});

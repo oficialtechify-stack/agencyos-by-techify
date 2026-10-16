@@ -707,25 +707,16 @@ async function syncWorkspace(forceRender=false){
   }catch(e){cloudFail(e,'Sincronizar workspace');updateSyncChip()}
 }
 function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>{if(!document.hidden&&state.cloudStatus!=='error')syncWorkspace(false)},30000)}
-async function uploadToFirebase(file,folder){
-  if(!state.user)throw new Error('Entre na sua conta para enviar arquivos.');
-  const max=folder==='content'?10*1024*1024:4*1024*1024;
-  if(!file.size||file.size>max)throw new Error('O arquivo excede o limite permitido.');
-  if(folder==='content'&&!file.type.startsWith('image/'))throw new Error('Envie uma imagem válida.');
-  const safe=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'-').slice(0,110);
-  const path=folder+'/'+state.user.uid+'/'+Date.now()+'-'+id('file')+'-'+safe;
-  const ref=storageRef(cloudStorage,path);
-  try{
-    await uploadBytes(ref,file,{contentType:file.type||'application/octet-stream'});
-    const url=await getDownloadURL(ref);
-    return {path,url,name:file.name,type:file.type,size:file.size};
-  }catch(e){
-    throw new Error('Falha ao enviar para Firebase Storage: '+(e.code||e.message));
-  }
+async function uploadMedia(file,mode){
+ const token=await state.user.getIdToken();
+ const r=await fetch('/api/chat-upload?mode='+mode+'&name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});
+ const result=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(result.error||'Não foi possível enviar o arquivo.');
+ return result;
 }
 async function storeFile(file,projectId,index){
-  const saved=await uploadToFirebase(file,'content');
-  return {id:id('asset'),name:saved.name,type:saved.type,size:saved.size,order:index,url:saved.url,path:saved.path,blobPath:'',localOnly:false};
+ const d=await uploadMedia(file,'content');
+ return {...d.asset,order:index};
 }
 function findAsset(assetId){for(const p of state.projects){const a=(p.assets||[]).find(x=>x.id===assetId);if(a)return a}return null}
 
@@ -826,8 +817,8 @@ function addChatFiles(files){
   renderChatDraftFiles();
 }
 async function uploadChatFile(file){
-  const saved=await uploadToFirebase(file,'chat');
-  return {pathname:saved.path,name:saved.name,type:saved.type,size:saved.size,url:saved.url};
+ const d=await uploadMedia(file,'chat');
+ return d.attachment;
 }
 async function sendChatMessage(){
   const input=document.getElementById('chatInput'),btn=document.getElementById('chatSend');if(!input||!btn)return;
@@ -844,8 +835,8 @@ async function sendChatMessage(){
 }
 async function hydrateChatAttachments(scope=document){
   const imgs=[...scope.querySelectorAll('[data-chat-img]')];
-  for(const img of imgs){if(img.dataset.loaded)continue;img.dataset.loaded='1';try{const path=img.dataset.chatImg;const url=path.startsWith('chat/files/')?URL.createObjectURL(await apiAuthBlob('/api/team?action=file&path='+encodeURIComponent(path))):await getDownloadURL(storageRef(cloudStorage,path));img.src=url;img.onclick=()=>window.open(url,'_blank','noopener')}catch{img.alt='Imagem indisponível'}}
-  scope.querySelectorAll('[data-chat-download]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=async()=>{try{const path=b.dataset.chatDownload;const legacy=path.startsWith('chat/files/');const url=legacy?URL.createObjectURL(await apiAuthBlob('/api/team?action=file&path='+encodeURIComponent(path))):await getDownloadURL(storageRef(cloudStorage,path));const a=document.createElement('a');a.href=url;a.download=b.dataset.chatName||'arquivo';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}catch(e){toast(e.message,'err')}}});
+  for(const img of imgs){if(img.dataset.loaded)continue;img.dataset.loaded='1';try{const path=img.dataset.chatImg;const attachment=state.chatMessages.flatMap(m=>m.attachments||[]).find(a=>a.pathname===path);const url=attachment?.url||(path.startsWith('chat/files/')?URL.createObjectURL(await apiAuthBlob('/api/team?action=file&path='+encodeURIComponent(path))):await getDownloadURL(storageRef(cloudStorage,path)));img.src=url;img.onclick=()=>window.open(url,'_blank','noopener')}catch{img.alt='Imagem indisponível'}}
+  scope.querySelectorAll('[data-chat-download]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=async()=>{try{const path=b.dataset.chatDownload;const attachment=state.chatMessages.flatMap(m=>m.attachments||[]).find(a=>a.pathname===path);const legacy=path.startsWith('chat/files/');const url=attachment?.url||(legacy?URL.createObjectURL(await apiAuthBlob('/api/team?action=file&path='+encodeURIComponent(path))):await getDownloadURL(storageRef(cloudStorage,path)));const a=document.createElement('a');a.href=url;a.download=b.dataset.chatName||'arquivo';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}catch(e){toast(e.message,'err')}}});
 }
 function bindChatPage(){
   const attach=document.getElementById('chatAttach'),file=document.getElementById('chatFiles'),notice=document.getElementById('chatNotice'),input=document.getElementById('chatInput'),send=document.getElementById('chatSend'),notify=document.getElementById('notifyBtn'),compose=document.getElementById('chatCompose');

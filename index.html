@@ -600,9 +600,25 @@ body{
   .search input{font-size:10px!important}
 }
 
+
+/* LeadsPay Connect – resilient workspace polish */
+:root{--bg:#080610;--panel:#100d19;--panel2:#181326;--line:#30263f;--purple:#9b67ff;--purple2:#7c3aed;--text:#f8f7ff;--muted:#b1a9c0}
+.sidebar{background:linear-gradient(180deg,#110d1d 0%,#0a0811 100%);border-right:1px solid #362748}
+.brand-mark{background:linear-gradient(135deg,#b78bff,#7135df);box-shadow:0 8px 32px #743add55}
+.nav button{transition:background .18s,color .18s,transform .18s}
+.nav button:hover{background:#251a37;color:#fff;transform:translateX(2px)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #bfa4ff;outline-offset:3px}
+button:disabled{opacity:.58;cursor:not-allowed}
+.card,.stat,.project-card{border-color:#32283e}
+#syncAlert{position:fixed;z-index:10000;right:18px;bottom:20px;max-width:410px;padding:15px 18px;border:1px solid #a56b40;background:#281b17;color:#ffdfbd;border-radius:14px;box-shadow:0 18px 50px #0009;font:500 13px/1.5 Inter,system-ui,sans-serif}
+#syncAlert[hidden]{display:none!important}
+#syncAlert strong{display:block;color:#fff4e6;margin-bottom:4px;font-size:14px}
+@media(max-width:760px){#syncAlert{left:12px;right:12px;bottom:74px;max-width:none}.nav button:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
 </style>
 </head>
-<body><div id="root"></div><div id="overlay"></div><div id="toast"></div>
+<body><div id="root"></div><div id="overlay"></div><div id="toast"></div><aside id="syncAlert" role="alert" hidden><strong>Problema de sincronização</strong><span id="syncAlertText"></span></aside>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
@@ -664,12 +680,12 @@ let state={view:(new URLSearchParams(location.search).get('open')==='chat'?'chat
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}
 function save(){localStorage.setItem(K.projects,JSON.stringify(state.projects));localStorage.setItem(K.activity,JSON.stringify(state.activity.slice(0,300)));localStorage.setItem(K.settings,JSON.stringify(state.settings));}
 function plain(v){return JSON.parse(JSON.stringify(v))}
-function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.message||String(e)}
+function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.message||String(e);updateSyncChip();const el=document.getElementById('syncAlert');const message=document.getElementById('syncAlertText');if(el&&message){message.textContent=context+': '+state.cloudError+' Os dados locais não serão enviados automaticamente até a conexão ser restabelecida.';el.hidden=false}}
 async function persistProject(p){save();if(!state.user)return p;try{const d=await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})});const saved=d.project||p;const i=state.projects.findIndex(x=>x.id===saved.id);if(i>=0)state.projects[i]={...state.projects[i],...saved};else state.projects.unshift(saved);save();state.cloudStatus='connected';updateSyncChip();return saved}catch(e){cloudFail(e,'Salvar projeto');throw e}}
 async function persistSettings(){save();if(!state.user)return state.settings;try{const d=await apiAuth('/api/team?action=settings-save',{method:'POST',body:JSON.stringify({settings:plain(state.settings)})});state.settings={...defaultSettings,...(d.settings||state.settings)};save();state.cloudStatus='connected';updateSyncChip();return state.settings}catch(e){cloudFail(e,'Salvar configurações');throw e}}
 async function removeProjectCloud(projectId){if(!state.user)return;try{await apiAuth('/api/team?action=project-delete',{method:'POST',body:JSON.stringify({projectId})});state.cloudStatus='connected';updateSyncChip()}catch(e){cloudFail(e,'Excluir projeto');throw e}}
 function stopCloudSync(){if(unsubProjects)clearInterval(unsubProjects);unsubProjects=null;unsubActivity=unsubSettings=null}
-function updateSyncChip(){const chip=document.querySelector('.sync-chip');if(!chip)return;chip.classList.remove('connected','error','connecting');chip.classList.add(state.cloudStatus);const label=chip.childNodes[chip.childNodes.length-1];if(label)label.textContent=syncLabel()}
+function updateSyncChip(){const banner=document.getElementById('syncAlert');if(banner&&state.cloudStatus==='connected')banner.hidden=true;const chip=document.querySelector('.sync-chip');if(!chip)return;chip.classList.remove('connected','error','connecting');chip.classList.add(state.cloudStatus);const label=chip.childNodes[chip.childNodes.length-1];if(label)label.textContent=syncLabel()}
 function newer(a,b){return String(a?.updatedAt||a?.createdAt||'').localeCompare(String(b?.updatedAt||b?.createdAt||''))>=0?a:b}
 async function syncWorkspace(forceRender=false){
   if(!state.user)return;
@@ -682,11 +698,11 @@ async function syncWorkspace(forceRender=false){
     state.activity=Array.isArray(d.activity)&&d.activity.length?d.activity:state.activity;
     if(d.settings&&Object.keys(d.settings).length)state.settings={...defaultSettings,...d.settings};
     save();state.cloudStatus='connected';state.cloudError='';updateSyncChip();
-    if(toPush.length){for(const p of toPush.slice(0,30)){try{await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})})}catch(e){console.warn('Migração de conteúdo',p.id,e.message)}}}
+    if(toPush.length){for(const p of toPush.slice(0,30)){try{await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})})}catch(e){cloudFail(e,'Enviar conteúdo pendente');break}}}
     if(forceRender&&state.role)render();else if(state.role&&['dashboard','instagram','site','approvals','library','calendar','history'].includes(state.view))renderPage();
   }catch(e){cloudFail(e,'Sincronizar workspace');updateSyncChip()}
 }
-function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>syncWorkspace(false),4000)}
+function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>{if(!document.hidden)syncWorkspace(false)},15000)}
 async function storeFile(file,projectId,index){
   const token=await state.user.getIdToken();state.idToken=token;
   const r=await fetch('/api/chat-upload?mode=content&name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});

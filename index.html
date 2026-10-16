@@ -618,7 +618,7 @@ button:disabled{opacity:.58;cursor:not-allowed}
 
 </style>
 </head>
-<body><div id="root"></div><div id="overlay"></div><div id="toast"></div><aside id="syncAlert" role="alert" hidden><strong>Problema de sincronização</strong><span id="syncAlertText"></span></aside>
+<body><div id="root"></div><div id="overlay"></div><div id="toast"></div><aside id="syncAlert" role="alert" hidden><strong>Problema de sincronização</strong><span id="syncAlertText"></span><button id="backupLocalBtn" type="button" style="display:block;margin-top:12px;border-radius:9px;padding:9px 12px;background:#8250d9;border:1px solid #a88ce5;color:white;font-weight:700">Salvar cópia local dos registros</button></aside>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
@@ -680,6 +680,8 @@ let state={view:(new URLSearchParams(location.search).get('open')==='chat'?'chat
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}
 function save(){localStorage.setItem(K.projects,JSON.stringify(state.projects));localStorage.setItem(K.activity,JSON.stringify(state.activity.slice(0,300)));localStorage.setItem(K.settings,JSON.stringify(state.settings));}
 function plain(v){return JSON.parse(JSON.stringify(v))}
+function exportLocalBackup(){const backup={version:1,exportedAt:new Date().toISOString(),origin:location.origin,projects:state.projects,activity:state.activity,settings:state.settings};const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='leadspay-connect-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+document.getElementById('backupLocalBtn')?.addEventListener('click',exportLocalBackup);
 function cloudFail(e,context='Sincronização'){console.error(context,e);state.cloudStatus='error';state.cloudError=e?.message||String(e);updateSyncChip();const el=document.getElementById('syncAlert');const message=document.getElementById('syncAlertText');if(el&&message){message.textContent=context+': '+state.cloudError+' Os dados locais não serão enviados automaticamente até a conexão ser restabelecida.';el.hidden=false}}
 async function persistProject(p){save();if(!state.user)return p;try{const d=await apiAuth('/api/team?action=project-save',{method:'POST',body:JSON.stringify({project:plain(p)})});const saved=d.project||p;const i=state.projects.findIndex(x=>x.id===saved.id);if(i>=0)state.projects[i]={...state.projects[i],...saved};else state.projects.unshift(saved);save();state.cloudStatus='connected';updateSyncChip();return saved}catch(e){cloudFail(e,'Salvar projeto');throw e}}
 async function persistSettings(){save();if(!state.user)return state.settings;try{const d=await apiAuth('/api/team?action=settings-save',{method:'POST',body:JSON.stringify({settings:plain(state.settings)})});state.settings={...defaultSettings,...(d.settings||state.settings)};save();state.cloudStatus='connected';updateSyncChip();return state.settings}catch(e){cloudFail(e,'Salvar configurações');throw e}}

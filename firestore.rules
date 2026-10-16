@@ -14,6 +14,11 @@ service cloud.firestore {
     function designer() {
       return team() && request.auth.token.email == 'vitoriajob02@gmail.com';
     }
+    // Backend record adapter: only the two verified team accounts may access it.
+    // API routes enforce role-specific approval and deletion rules.
+    match /connectRecords/{id} {
+      allow read, create, update, delete: if team();
+    }
     match /users/{uid} {
       allow read: if team();
       allow create, update: if team() && request.auth.uid == uid;

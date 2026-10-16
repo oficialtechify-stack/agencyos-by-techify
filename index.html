@@ -707,12 +707,25 @@ async function syncWorkspace(forceRender=false){
   }catch(e){cloudFail(e,'Sincronizar workspace');updateSyncChip()}
 }
 function startCloudSync(){stopCloudSync();if(!state.user)return;state.cloudStatus='connecting';syncWorkspace(true);unsubProjects=setInterval(()=>{if(!document.hidden&&state.cloudStatus!=='error')syncWorkspace(false)},30000)}
+async function uploadToFirebase(file,folder){
+  if(!state.user)throw new Error('Entre na sua conta para enviar arquivos.');
+  const max=folder==='content'?10*1024*1024:4*1024*1024;
+  if(!file.size||file.size>max)throw new Error('O arquivo excede o limite permitido.');
+  if(folder==='content'&&!file.type.startsWith('image/'))throw new Error('Envie uma imagem válida.');
+  const safe=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'-').slice(0,110);
+  const path=folder+'/'+state.user.uid+'/'+Date.now()+'-'+id('file')+'-'+safe;
+  const ref=storageRef(cloudStorage,path);
+  try{
+    await uploadBytes(ref,file,{contentType:file.type||'application/octet-stream'});
+    const url=await getDownloadURL(ref);
+    return {path,url,name:file.name,type:file.type,size:file.size};
+  }catch(e){
+    throw new Error('Falha ao enviar para Firebase Storage: '+(e.code||e.message));
+  }
+}
 async function storeFile(file,projectId,index){
-  const token=await state.user.getIdToken();state.idToken=token;
-  const r=await fetch('/api/chat-upload?mode=content&name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});
-  let d={};try{d=await r.json()}catch{}
-  if(!r.ok)throw new Error(d.error||'Não foi possível enviar '+file.name);
-  return {...d.asset,order:index};
+  const saved=await uploadToFirebase(file,'content');
+  return {id:id('asset'),name:saved.name,type:saved.type,size:saved.size,order:index,url:saved.url,path:saved.path,blobPath:'',localOnly:false};
 }
 function findAsset(assetId){for(const p of state.projects){const a=(p.assets||[]).find(x=>x.id===assetId);if(a)return a}return null}
 
@@ -813,11 +826,8 @@ function addChatFiles(files){
   renderChatDraftFiles();
 }
 async function uploadChatFile(file){
-  const token=await state.user.getIdToken();state.idToken=token;
-  const r=await fetch('/api/chat-upload?name='+encodeURIComponent(file.name),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file});
-  let d={};try{d=await r.json()}catch{}
-  if(!r.ok)throw new Error(d.error||'Não foi possível enviar '+file.name);
-  return d.attachment;
+  const saved=await uploadToFirebase(file,'chat');
+  return {pathname:saved.path,name:saved.name,type:saved.type,size:saved.size,url:saved.url};
 }
 async function sendChatMessage(){
   const input=document.getElementById('chatInput'),btn=document.getElementById('chatSend');if(!input||!btn)return;

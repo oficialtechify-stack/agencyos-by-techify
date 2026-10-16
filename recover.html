@@ -13,19 +13,33 @@ import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs
 const config={apiKey:"AIzaSyBROk9UeKSeF2mv3XZ3t1moIrCRYwGEowA",authDomain:"leadspay-connect.firebaseapp.com",projectId:"leadspay-connect",appId:"1:543451390719:web:68fc1e459c2f65f53d62ca"};
 const auth=getAuth(initializeApp(config)),db=getFirestore(auth.app),byId=x=>document.getElementById(x),log=x=>byId("log").textContent=x;
 let payload=null;
+let verificationBlocked=false;
+function blockVerification(){
+ verificationBlocked=true;
+ const button=byId("sendVerify");
+ button.disabled=true;
+ button.textContent="Envio temporariamente limitado";
+ byId("verifyStatus").textContent="Firebase limitou os envios de e-mail";
+}
 function showVerification(user){
  const verified=Boolean(user?.emailVerified);
  byId("verifyStatus").textContent=verified?"E-mail verificado — acesso liberado":"E-mail ainda não verificado";
  byId("sendVerify").hidden=verified;
+ if(verificationBlocked&&!verified)byId("sendVerify").disabled=true;
  byId("verifyBox").style.borderColor=verified?"#32745d":"#65448b";
  byId("import").disabled=!verified||!payload;
 }
 byId("sendVerify").onclick=async()=>{
- const user=auth.currentUser;if(!user)return;
+ const user=auth.currentUser;if(!user||verificationBlocked)return;
  const button=byId("sendVerify");button.disabled=true;
  try{await sendEmailVerification(user,{url:location.origin+"/recover",handleCodeInApp:false});log("Link solicitado ao Firebase. Verifique sua caixa de entrada e a pasta de spam. Depois clique em Já confirmei — atualizar.")}
- catch(e){log("Não foi possível enviar: "+(e.code||e.message)+". Aguarde alguns minutos se o limite de tentativas foi atingido.")}
- finally{button.disabled=false}
+ catch(e){
+  if(e.code==="auth/too-many-requests"){
+    blockVerification();
+    log("O Firebase limitou temporariamente o envio de e-mails. Não continue tentando agora. Verifique se já recebeu um link no Gmail (inclusive Spam). Aguarde a liberação do Firebase e, se necessário, tente mais tarde.");
+  }else log("Não foi possível enviar: "+(e.code||e.message));
+ }
+ finally{if(!verificationBlocked)button.disabled=false}
 };
 byId("refreshVerify").onclick=async()=>{
  try{await auth.currentUser.reload();await auth.currentUser.getIdToken(true);showVerification(auth.currentUser);log(auth.currentUser.emailVerified?"E-mail verificado! Selecione e valide o backup para importar.":"Ainda não verificado. Abra o link recebido no e-mail e tente novamente.")}

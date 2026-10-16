@@ -10,7 +10,7 @@ const settingsPath="workspace/settings.json";
 const profilePath=role=>"workspace/profiles/"+role+".json";
 
 function status(record){if(!record)return {online:false,lastSeen:null,visible:false};const age=Date.now()-new Date(record.lastSeen||0).getTime();return {...record,online:age<55000&&record.visible!==false}}
-function cleanAttachment(a){if(!a||typeof a!=="object")return null;const pathname=String(a.pathname||"");if(!pathname.startsWith("chat/files/"))return null;return {pathname,name:String(a.name||"arquivo").slice(0,180),type:String(a.type||"application/octet-stream").slice(0,120),size:Math.max(0,Number(a.size||0))}}
+function cleanAttachment(a){if(!a||typeof a!=="object")return null;const pathname=String(a.pathname||"");if(!pathname.startsWith("chat/files/")&&!/^chat\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(pathname))return null;return {pathname,name:String(a.name||"arquivo").slice(0,180),type:String(a.type||"application/octet-stream").slice(0,120),size:Math.max(0,Number(a.size||0)),url:a.url&&String(a.url).startsWith("https://firebasestorage.googleapis.com/")?String(a.url).slice(0,2000):""}}
 function cleanProject(input){
   const p=input||{};
   return {
@@ -163,7 +163,7 @@ export default async function handler(req,res){
       const message={id,text:messageText,type,attachments,sender:{email:user.email,role:user.role,name:senderName},at:new Date(now).toISOString()};
       await writeJson("chat/messages/"+id+".json",message,token);
       const preview=messageText||(attachments.length===1?"Enviou um arquivo":"Enviou "+attachments.length+" arquivos");
-      await sendTeamPush({...user,name:senderName},{title:senderName+" · LeadsPay Connect",body:type==="notice"?"📌 Aviso: "+preview:preview,url:"/?open=chat",tag:"leadspay-chat-"+id});
+      try{await sendTeamPush({...user,name:senderName},{title:senderName+" · LeadsPay Connect",body:type==="notice"?"📌 Aviso: "+preview:preview,url:"/?open=chat",tag:"leadspay-chat-"+id})}catch(error){console.warn("Push indisponível; mensagem preservada",error?.message)}
       return res.status(200).json({ok:true,message});
     }
 

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { get } from "@vercel/blob";
 import { requireTeamUser, sendApiError } from "./_lib/auth.js";
-import { listJson, readJson, removeJson, writeJson } from "./_lib/blob-store.js";
+import { listRecords as listJson, readRecord as readJson, removeRecord as removeJson, writeRecord as writeJson } from "./_lib/record-store.js";
 import { savePushSubscription, sendTeamPush } from "./_lib/push.js";
 
 const projectPath=id=>"workspace/projects/"+encodeURIComponent(id)+".json";
@@ -45,18 +45,18 @@ function cleanProject(input){
     metaMediaId:p.metaMediaId?String(p.metaMediaId).slice(0,240):null
   };
 }
-async function readAll(prefix,limit=300){
-  const blobs=await listJson(prefix);
+async function readAll(prefix,limit=300,token){
+  const blobs=await listJson(prefix,token);
   const selected=blobs.sort((a,b)=>a.pathname.localeCompare(b.pathname)).slice(-limit);
-  return (await Promise.all(selected.map(b=>readJson(b.pathname)))).filter(Boolean);
+  return (await Promise.all(selected.map(b=>readJson(b.pathname,token)))).filter(Boolean);
 }
-async function workspaceSnapshot(){
+async function workspaceSnapshot(token){
   const [projects,activity,settings,adminProfile,designerProfile]=await Promise.all([
-    readAll("workspace/projects/",500),
-    readAll("workspace/activity/",300),
-    readJson(settingsPath),
-    readJson(profilePath("admin")),
-    readJson(profilePath("designer"))
+    readAll("workspace/projects/",500,token),
+    readAll("workspace/activity/",300,token),
+    readJson(settingsPath,token),
+    readJson(profilePath("admin"),token),
+    readJson(profilePath("designer"),token)
   ]);
   projects.sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
   activity.sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")));
@@ -77,29 +77,30 @@ export default async function handler(req,res){
   }
   try{
     const user=await requireTeamUser(req,["admin","designer"]);
+    const token=String(req.headers.authorization||"");
 
     if(action==="workspace"){
       if(req.method!=="GET")return res.status(405).json({ok:false,error:"Método não permitido."});
-      return res.status(200).json({ok:true,...await workspaceSnapshot()});
+      return res.status(200).json({ok:true,...await workspaceSnapshot(token)});
     }
     if(action==="project-save"){
       if(req.method!=="POST")return res.status(405).json({ok:false,error:"Método não permitido."});
       const project=cleanProject(req.body?.project);
       if(!project.id||!project.title)return res.status(400).json({ok:false,error:"Conteúdo inválido."});
-      const existing=await readJson(projectPath(project.id));
+      const existing=await readJson(projectPath(project.id),token);
       if(!statusAllowed(user,existing,project.status))return res.status(403).json({ok:false,error:"Você não pode alterar este conteúdo para esse status."});
       if(existing?.createdByUid&&user.role==="designer"&&existing.createdByUid!==user.uid)return res.status(403).json({ok:false,error:"Conteúdo não pertence à sua conta."});
       const record={...project,updatedAt:new Date().toISOString()};
-      await writeJson(projectPath(project.id),record);
+      await writeJson(projectPath(project.id),record,token);
       return res.status(200).json({ok:true,project:record});
     }
     if(action==="project-delete"){
       if(req.method!=="POST")return res.status(405).json({ok:false,error:"Método não permitido."});
       const id=String(req.body?.projectId||"");
       if(!id)return res.status(400).json({ok:false,error:"Conteúdo inválido."});
-      const existing=await readJson(projectPath(id));
+      const existing=await readJson(projectPath(id),token);
       if(existing&&user.role==="designer"&&!["draft","changes"].includes(existing.status))return res.status(403).json({ok:false,error:"Esse conteúdo não pode mais ser excluído."});
-      await removeJson(projectPath(id));
+      await removeJson(projectPath(id),token);
       return res.status(200).json({ok:true});
     }
     if(action==="activity-add"){
@@ -107,7 +108,7 @@ export default async function handler(req,res){
       const item=req.body?.activity||{};
       const id=String(item.id||Date.now()+"-"+crypto.randomBytes(4).toString("hex"));
       const record={id,action:String(item.action||"Atividade").slice(0,240),projectId:item.projectId?String(item.projectId).slice(0,180):null,detail:String(item.detail||"").slice(0,1000),by:user.name,at:String(item.at||new Date().toISOString())};
-      await writeJson(activityPath(id),record);
+      await writeJson(activityPath(id),record,token);
       return res.status(200).json({ok:true,activity:record});
     }
     if(action==="settings-save"){
@@ -115,40 +116,40 @@ export default async function handler(req,res){
       if(user.role!=="admin")return res.status(403).json({ok:false,error:"Somente o administrador pode alterar as configurações."});
       const s=req.body?.settings||{};
       const record={adminName:String(s.adminName||"Rick").slice(0,100),designerName:String(s.designerName||"Designer").slice(0,100),company:String(s.company||"LeadsPay").slice(0,120),calendarStart:Number(s.calendarStart||1),updatedAt:new Date().toISOString()};
-      await writeJson(settingsPath,record);
+      await writeJson(settingsPath,record,token);
       return res.status(200).json({ok:true,settings:record});
     }
     if(action==="profile"){
       if(req.method==="GET"){
-        const profile=await readJson(profilePath(user.role));
+        const profile=await readJson(profilePath(user.role),token);
         return res.status(200).json({ok:true,profile});
       }
       if(req.method!=="POST")return res.status(405).json({ok:false,error:"Método não permitido."});
       const p=req.body?.profile||{};
-      const existing=await readJson(profilePath(user.role));
+      const existing=await readJson(profilePath(user.role),token);
       const record={...(existing||{}),name:String(p.name||user.name).trim().slice(0,100)||user.name,jobTitle:String(p.jobTitle||(user.role==="admin"?"Administrador":"Designer")).slice(0,100),phone:String(p.phone||"").slice(0,40),instagram:String(p.instagram||"").slice(0,100),bio:String(p.bio||"").slice(0,500),role:user.role,email:user.email,updatedAt:new Date().toISOString(),createdAt:existing?.createdAt||new Date().toISOString()};
-      await writeJson(profilePath(user.role),record);
+      await writeJson(profilePath(user.role),record,token);
       return res.status(200).json({ok:true,profile:record});
     }
 
     if(action==="presence"){
       if(req.method==="POST"){
-        const profile=await readJson(profilePath(user.role));
+        const profile=await readJson(profilePath(user.role),token);
         const record={email:user.email,role:user.role,name:profile?.name||user.name,visible:req.body?.visible!==false,lastSeen:new Date().toISOString()};
-        await writeJson("chat/presence/"+user.role+".json",record);
+        await writeJson("chat/presence/"+user.role+".json",record,token);
         return res.status(200).json({ok:true,presence:status(record)});
       }
       if(req.method!=="GET")return res.status(405).json({ok:false,error:"Método não permitido."});
-      const values=await Promise.all([readJson("chat/presence/admin.json"),readJson("chat/presence/designer.json")]);
+      const values=await Promise.all([readJson("chat/presence/admin.json",token),readJson("chat/presence/designer.json",token)]);
       const other=user.role==="admin"?status(values[1]):status(values[0]);
       return res.status(200).json({ok:true,self:user.role,other});
     }
 
     if(action==="messages"){
       if(req.method==="GET"){
-        const blobs=await listJson("chat/messages/");
+        const blobs=await listJson("chat/messages/",token);
         const recent=blobs.sort((a,b)=>a.pathname.localeCompare(b.pathname)).slice(-100);
-        const messages=(await Promise.all(recent.map(b=>readJson(b.pathname)))).filter(Boolean);
+        const messages=(await Promise.all(recent.map(b=>readJson(b.pathname,token)))).filter(Boolean);
         messages.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
         return res.status(200).json({ok:true,messages});
       }
@@ -157,10 +158,10 @@ export default async function handler(req,res){
       const attachments=Array.isArray(req.body?.attachments)?req.body.attachments.map(cleanAttachment).filter(Boolean).slice(0,8):[];
       if(!messageText&&!attachments.length)return res.status(400).json({ok:false,error:"Escreva uma mensagem ou envie um arquivo."});
       const now=Date.now(),id=now.toString().padStart(13,"0")+"-"+crypto.randomBytes(6).toString("hex");
-      const profile=await readJson(profilePath(user.role));
+      const profile=await readJson(profilePath(user.role),token);
       const senderName=profile?.name||user.name;
       const message={id,text:messageText,type,attachments,sender:{email:user.email,role:user.role,name:senderName},at:new Date(now).toISOString()};
-      await writeJson("chat/messages/"+id+".json",message);
+      await writeJson("chat/messages/"+id+".json",message,token);
       const preview=messageText||(attachments.length===1?"Enviou um arquivo":"Enviou "+attachments.length+" arquivos");
       await sendTeamPush({...user,name:senderName},{title:senderName+" · LeadsPay Connect",body:type==="notice"?"📌 Aviso: "+preview:preview,url:"/?open=chat",tag:"leadspay-chat-"+id});
       return res.status(200).json({ok:true,message});

@@ -1,37 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
+    function team() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'rickmarketing81@gmail.com',
+          'vitoriajob02@gmail.com'
+        ];
     }
-    function isTeam() {
-      return isSignedIn() && request.auth.token.email in [
-        'rickmarketing81@gmail.com',
-        'vitoriajob02@gmail.com'
-      ];
+    function admin() {
+      return team() && request.auth.token.email == 'rickmarketing81@gmail.com';
     }
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'rickmarketing81@gmail.com';
+    function designer() {
+      return team() && request.auth.token.email == 'vitoriajob02@gmail.com';
     }
-
-    match /users/{userId} {
-      allow read: if isTeam();
-      allow create, update: if isTeam() && request.auth.uid == userId;
-      allow delete: if isAdmin();
+    match /users/{uid} {
+      allow read: if team();
+      allow create, update: if team() && request.auth.uid == uid;
+      allow delete: if admin();
     }
-
-    match /projects/{projectId} {
-      allow read, create, update, delete: if isTeam();
+    match /projects/{id} {
+      allow read: if team();
+      allow create: if designer() && request.resource.data.createdByUid == request.auth.uid;
+      allow update: if admin() ||
+        (designer() && resource.data.createdByUid == request.auth.uid
+          && resource.data.status in ['draft','review','changes']
+          && request.resource.data.status in ['draft','review','changes']);
+      allow delete: if admin() ||
+        (designer() && resource.data.createdByUid == request.auth.uid
+          && resource.data.status in ['draft','changes']);
     }
-
-    match /activity/{activityId} {
-      allow read, create: if isTeam();
-      allow update, delete: if isAdmin();
+    match /activity/{id} {
+      allow read: if team();
+      allow create: if team() && request.resource.data.byUid == request.auth.uid;
+      allow update, delete: if admin();
     }
-
-    match /workspace/{document=**} {
-      allow read: if isTeam();
-      allow write: if isAdmin();
+    match /teamMessages/{id} {
+      allow read: if team();
+      allow create: if team() && request.resource.data.sender.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 5000;
+      allow update, delete: if false;
+    }
+    match /teamPresence/{role} {
+      allow read: if team();
+      allow write: if (admin() && role == 'admin') || (designer() && role == 'designer');
+    }
+    match /teamProfiles/{role} {
+      allow read: if team();
+      allow write: if (admin() && role == 'admin') || (designer() && role == 'designer');
+    }
+    match /teamSettings/{id} {
+      allow read: if team();
+      allow write: if admin();
+    }
+    match /workspace/{doc=**} {
+      allow read: if team();
+      allow write: if admin();
     }
   }
 }

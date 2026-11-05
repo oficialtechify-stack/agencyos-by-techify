@@ -16,8 +16,17 @@ service cloud.firestore {
     }
     // Backend record adapter: only the two verified team accounts may access it.
     // API routes enforce role-specific approval and deletion rules.
+    // Documents must carry ownerUid (stamped by record-store.js on every
+    // write). DO NOT deploy this block until the Blob -> Firestore migration
+    // has stamped ownerUid on every legacy document: without it, update/delete
+    // of old documents fail for everyone except admin.
     match /connectRecords/{id} {
-      allow read, create, update, delete: if team();
+      allow read: if team();
+      allow create: if team() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if admin() ||
+        (team() && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid);
+      allow delete: if admin();
     }
     match /users/{uid} {
       allow read: if team();

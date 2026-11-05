@@ -14,6 +14,7 @@ async function walk(dir) {
   }
 }
 await walk("api");
+await walk("scripts");
 const tmp = await mkdtemp(join(tmpdir(), "syntax-"));
 for (const html of ["index.html", "recover.html"]) {
   const src = await readFile(html, "utf8");

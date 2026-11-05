@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { get } from "@vercel/blob";
 import { requireTeamUser, sendApiError } from "../_lib/auth.js";
 import { assertApproved, publicationPath, schedulePath } from "../_lib/workflow.js";
-import { readJson, removeJson, writeJson } from "../_lib/blob-store.js";
+import { readRecord as readJson, removeRecord as removeJson, writeRecord as writeJson } from "../_lib/record-store.js";
 import { publishInstagram } from "../_lib/meta.js";
 
 function expectedSig(pathname){const secret=process.env.MEDIA_SIGNING_SECRET||process.env.META_INSTAGRAM_APP_SECRET||"";return crypto.createHmac("sha256",secret).update(pathname).digest("hex")}
@@ -25,15 +25,16 @@ export default async function handler(req,res){
   if(req.method!=="POST") return res.status(405).json({ok:false,error:"Método não permitido."});
   try{
     const user=await requireTeamUser(req,["designer"]);
-    const {clean,fingerprint}=await assertApproved(req.body?.project);
-    const existing=await readJson(publicationPath(clean.id));
+    const token=String(req.headers.authorization||"");
+    const {clean,fingerprint}=await assertApproved(req.body?.project,token);
+    const existing=await readJson(publicationPath(clean.id),token);
     if(existing) return res.status(200).json({ok:true,publication:existing,alreadyPublished:true});
-    const result=await publishInstagram(clean);
+    const result=await publishInstagram(clean,token);
     const publication={projectId:clean.id,fingerprint,...result,publishedBy:user.email,publishedByName:user.name};
-    await writeJson(publicationPath(clean.id),publication);
-    await removeJson(schedulePath(clean.id));
-    const workspace=await readJson("workspace/projects/"+encodeURIComponent(clean.id)+".json");
-    if(workspace)await writeJson("workspace/projects/"+encodeURIComponent(clean.id)+".json",{...workspace,status:"published",publishedAt:publication.publishedAt,metaMediaId:publication.mediaId,scheduledAt:null,updatedAt:new Date().toISOString()});
+    await writeJson(publicationPath(clean.id),publication,token,{uid:user.uid,role:user.role});
+    await removeJson(schedulePath(clean.id),token);
+    const workspace=await readJson("workspace/projects/"+encodeURIComponent(clean.id)+".json",token);
+    if(workspace)await writeJson("workspace/projects/"+encodeURIComponent(clean.id)+".json",{...workspace,status:"published",publishedAt:publication.publishedAt,metaMediaId:publication.mediaId,scheduledAt:null,updatedAt:new Date().toISOString()},token,{uid:user.uid,role:user.role});
     res.status(200).json({ok:true,publication});
   }catch(e){sendApiError(res,e)}
 }

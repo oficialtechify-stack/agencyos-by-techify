@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import { listJson, readJson, writeJson } from "../_lib/blob-store.js";
+import { listRecords as listJson, readRecord as readJson, writeRecord as writeJson } from "../_lib/record-store.js";
 import { approvalPath, fingerprintProject, publicProject, schedulePath } from "../_lib/workflow.js";
 import { enqueueScheduledPublish, processScheduledPublish } from "../_lib/scheduled-publish.js";
 

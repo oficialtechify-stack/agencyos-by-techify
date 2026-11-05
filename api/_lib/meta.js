@@ -1,4 +1,4 @@
-import { readJson, removeJson, writeJson } from "./blob-store.js";
+import { readRecord as readJson, removeRecord as removeJson, writeRecord as writeJson } from "./record-store.js";
 
 const CONNECTION_PATH = "meta/connection.json";
 
@@ -117,7 +117,7 @@ export async function validateMetaToken(accessToken) {
   return { id: data.id, username: data.username || "", account_type: data.account_type || "" };
 }
 
-export async function saveMetaConnection(accessToken, expiresIn) {
+export async function saveMetaConnection(accessToken, expiresIn, token) {
   const profile = await validateMetaToken(accessToken);
   if (!profile) throw Object.assign(new Error("Não foi possível validar a conta do Instagram."), { status: 502 });
   const now = Date.now();
@@ -127,16 +127,16 @@ export async function saveMetaConnection(accessToken, expiresIn) {
     connectedAt: new Date(now).toISOString(),
     expiresAt: new Date(now + Math.max(3600, Number(expiresIn || 5184000)) * 1000).toISOString(),
   };
-  await writeJson(CONNECTION_PATH, record);
+  await writeJson(CONNECTION_PATH, record, token);
   return record;
 }
 
-export async function getMetaConnection() {
-  return readJson(CONNECTION_PATH);
+export async function getMetaConnection(token) {
+  return readJson(CONNECTION_PATH, token);
 }
 
-export async function disconnectMeta() {
-  await removeJson(CONNECTION_PATH);
+export async function disconnectMeta(token) {
+  await removeJson(CONNECTION_PATH, token);
 }
 
 function ensurePublishable(project) {
@@ -152,9 +152,9 @@ function ensurePublishable(project) {
   }
 }
 
-export async function publishInstagram(project) {
+export async function publishInstagram(project, storeToken) {
   ensurePublishable(project);
-  const connection = await getMetaConnection();
+  const connection = await getMetaConnection(storeToken);
   if (!connection || !connection.accessToken || !connection.profile || !connection.profile.id) {
     throw Object.assign(new Error("A conta do Instagram não está conectada ao LeadsPay Connect."), { status: 409 });
   }

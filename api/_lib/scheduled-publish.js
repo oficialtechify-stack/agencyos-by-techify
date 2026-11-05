@@ -1,5 +1,5 @@
 import { send } from "@vercel/queue";
-import { readJson, removeJson, writeJson } from "./blob-store.js";
+import { readRecord as readJson, removeRecord as removeJson, writeRecord as writeJson } from "./record-store.js";
 import { approvalPath, fingerprintProject, publicationPath, schedulePath } from "./workflow.js";
 import { publishInstagram } from "./meta.js";
 import { sendTeamPush } from "./push.js";
@@ -49,7 +49,7 @@ async function updateWorkspace(projectId, patch) {
   const path = "workspace/projects/" + encodeURIComponent(projectId) + ".json";
   const current = await readJson(path);
   if (current) {
-    await writeJson(path, { ...current, ...patch, updatedAt: new Date().toISOString() });
+    await writeJson(path, { ...current, ...patch, updatedAt: new Date().toISOString() }, undefined, null);
   }
 }
 

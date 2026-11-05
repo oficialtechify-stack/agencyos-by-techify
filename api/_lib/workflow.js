@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { readJson, removeJson, writeJson } from "./blob-store.js";
+import { readRecord as readJson, removeRecord as removeJson, writeRecord as writeJson } from "./record-store.js";
 
 export function publicProject(project) {
   const p = project || {};
@@ -41,11 +41,11 @@ export const approvalPath = (id) => "workflow/approvals/" + encodeURIComponent(i
 export const schedulePath = (id) => "workflow/schedules/" + encodeURIComponent(id) + ".json";
 export const publicationPath = (id) => "workflow/publications/" + encodeURIComponent(id) + ".json";
 
-export async function getApproval(projectId) {
-  return readJson(approvalPath(projectId));
+export async function getApproval(projectId, token) {
+  return readJson(approvalPath(projectId), token);
 }
 
-export async function approveProject(project, user) {
+export async function approveProject(project, user, token) {
   const clean = publicProject(project);
   if (!clean.id) throw Object.assign(new Error("Conteúdo inválido."), { status: 400 });
   const record = {
@@ -55,22 +55,22 @@ export async function approveProject(project, user) {
     approvedBy: user.email,
     approvedByName: user.name,
   };
-  await writeJson(approvalPath(clean.id), record);
-  await removeJson(schedulePath(clean.id));
+  await writeJson(approvalPath(clean.id), record, token, { uid: user.uid, role: user.role });
+  await removeJson(schedulePath(clean.id), token);
   return record;
 }
 
-export async function invalidateApproval(projectId) {
-  await Promise.all([removeJson(approvalPath(projectId)), removeJson(schedulePath(projectId))]);
+export async function invalidateApproval(projectId, token) {
+  await Promise.all([removeJson(approvalPath(projectId), token), removeJson(schedulePath(projectId), token)]);
 }
 
-export async function assertApproved(project) {
+export async function assertApproved(project, token) {
   const clean = publicProject(project);
-  const approval = await getApproval(clean.id);
+  const approval = await getApproval(clean.id, token);
   if (!approval) throw Object.assign(new Error("Este conteúdo ainda não foi aprovado pelo administrador."), { status: 409 });
   const current = fingerprintProject(clean);
   if (approval.fingerprint !== current) {
-    await invalidateApproval(clean.id);
+    await invalidateApproval(clean.id, token);
     throw Object.assign(new Error("O conteúdo mudou depois da aprovação. Envie novamente para aprovação."), { status: 409 });
   }
   return { clean, approval, fingerprint: current };

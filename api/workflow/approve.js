@@ -1,24 +1,25 @@
 import { requireTeamUser, sendApiError } from "../_lib/auth.js";
 import { approvalPath, fingerprintProject, schedulePath } from "../_lib/workflow.js";
-import { removeJson, writeJson } from "../_lib/blob-store.js";
+import { readJson, removeJson, writeJson } from "../_lib/blob-store.js";
 
 export default async function handler(req,res){
   if(req.method!=="POST") return res.status(405).json({ok:false,error:"Método não permitido."});
   try{
     const user=await requireTeamUser(req,["admin"]);
-    const source=req.body?.project||{};
-    const id=String(source.id||"");
+    const id=String(req.body?.project?.id||req.body?.projectId||"");
     if(!id) return res.status(400).json({ok:false,error:"Conteúdo inválido."});
+    const existing=await readJson("workspace/projects/"+encodeURIComponent(id)+".json");
+    if(!existing) return res.status(404).json({ok:false,error:"Conteúdo não encontrado."});
     const now=new Date().toISOString();
     const approval={
       projectId:id,
-      fingerprint:fingerprintProject(source),
+      fingerprint:fingerprintProject(existing),
       approvedAt:now,
       approvedBy:user.email,
       approvedByName:user.name
     };
     const project={
-      ...JSON.parse(JSON.stringify(source)),
+      ...existing,
       status:"approved",
       approvedAt:now,
       approvedBy:user.email,

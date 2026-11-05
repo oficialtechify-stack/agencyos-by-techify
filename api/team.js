@@ -19,7 +19,7 @@ function cleanAttachment(a){
  const allowed=url.startsWith("https://res.cloudinary.com/")||url.startsWith("https://firebasestorage.googleapis.com/");
  return {pathname,name:String(a.name||"arquivo").slice(0,180),type:String(a.type||"application/octet-stream").slice(0,120),size:Math.max(0,Number(a.size||0)),url:allowed?url.slice(0,2000):""};
 }
-function cleanProject(input){
+export function cleanProject(input){
   const p=input||{};
   return {
     id:String(p.id||"").slice(0,160),
@@ -70,7 +70,7 @@ async function workspaceSnapshot(token){
   activity.sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")));
   return {projects,activity,settings:settings||{},profiles:{admin:adminProfile,designer:designerProfile}};
 }
-function statusAllowed(user,existing,next){
+export function statusAllowed(user,existing,next){
   if(user.role==="admin")return true;
   if(!existing)return next==="draft"||next==="review";
   if(["approved","scheduled","published"].includes(existing.status))return next===existing.status;
@@ -108,6 +108,7 @@ export default async function handler(req,res){
       if(!id)return res.status(400).json({ok:false,error:"Conteúdo inválido."});
       const existing=await readJson(projectPath(id),token);
       if(existing&&user.role==="designer"&&!["draft","changes"].includes(existing.status))return res.status(403).json({ok:false,error:"Esse conteúdo não pode mais ser excluído."});
+      if(existing?.createdByUid&&user.role==="designer"&&existing.createdByUid!==user.uid)return res.status(403).json({ok:false,error:"Conteúdo não pertence à sua conta."});
       await removeJson(projectPath(id),token);
       return res.status(200).json({ok:true});
     }

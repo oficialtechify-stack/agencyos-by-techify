@@ -28,6 +28,7 @@ export async function requireTeamUser(req, allowedRoles = []) {
   const data = await response.json();
   const account = data && data.users && data.users[0];
   if (!response.ok || !account || !account.email) throw httpError(401, "Sessão inválida.");
+  if (account.emailVerified !== true) throw httpError(403, "Confirme seu e-mail para continuar. O link de verificação foi enviado pelo Firebase.");
 
   const email = String(account.email).toLowerCase();
   const member = TEAM[email];

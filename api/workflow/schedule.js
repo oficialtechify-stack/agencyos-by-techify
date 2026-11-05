@@ -12,7 +12,13 @@ export default async function handler(req,res){
       return res.status(400).json({ok:false,error:"Escolha uma data futura."});
     }
 
-    const {clean,fingerprint}=await assertApproved(req.body?.project);
+    const id=String(req.body?.project?.id||req.body?.projectId||"");
+    if(!id) return res.status(400).json({ok:false,error:"Conteúdo inválido."});
+    const existing=await readJson("workspace/projects/"+encodeURIComponent(id)+".json");
+    if(!existing) return res.status(404).json({ok:false,error:"Conteúdo não encontrado."});
+    if(existing.createdByUid && existing.createdByUid!==user.uid)
+      return res.status(403).json({ok:false,error:"Conteúdo não pertence à sua conta."});
+    const {clean,fingerprint}=await assertApproved(existing);
     const record={
       projectId:clean.id,
       project:publicProject(clean),
@@ -38,17 +44,14 @@ export default async function handler(req,res){
     }
 
     const path="workspace/projects/"+encodeURIComponent(clean.id)+".json";
-    const existing=await readJson(path);
-    if(existing) {
-      await writeJson(path,{
-        ...existing,
-        status:"scheduled",
-        scheduledAt:record.scheduledAt,
-        scheduleError:null,
-        scheduleQueue:"active",
-        updatedAt:new Date().toISOString()
-      });
-    }
+    await writeJson(path,{
+      ...existing,
+      status:"scheduled",
+      scheduledAt:record.scheduledAt,
+      scheduleError:null,
+      scheduleQueue:"active",
+      updatedAt:new Date().toISOString()
+    });
 
     res.status(200).json({ok:true,schedule:{...record,queue}});
   }catch(e){sendApiError(res,e)}
